@@ -1,0 +1,30 @@
+[project]
+name = "loam-iiif"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [{ name = "Brendan Quinn", email = "brendan-quinn@northwestern.edu" }]
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1.8",
+    "requests>=2.32.3",
+    "rich>=13.9.4",
+]
+
+[project.urls]
+Homepage = "https://github.com/nulib-labs/loam-iiif"
+Repository = "https://github.com/nulib-labs/loam-iiif.git"
+Issues = "https://github.com/nulib-labs/loam-iiif/issues"
+
+[project.scripts]
+loamiiif = "loam_iiif.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/loam_iiif"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["twine>=6.0.1"]
