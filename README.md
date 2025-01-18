@@ -4,13 +4,14 @@ A command-line tool for traversing IIIF collections and extracting manifest URLs
 
 ## Features
 
-- Recursively traverses IIIF collections to find all manifest URLs
-- Supports both IIIF Presentation API 2.0 and 3.0
-- Multiple output formats (JSON and formatted tables)
-- Save results to file or display in terminal
-- Debug mode for detailed logging
-- Robust error handling with automatic retries
-- Support for paginated collections
+- **Recursively Traverses IIIF Collections:** Finds all manifest URLs within a collection, including those in nested collections.
+- **Supports Multiple IIIF Presentation API Versions:** Compatible with both IIIF Presentation API 2.0 and 3.0.
+- **Multiple Output Formats:** Choose between `json`, `jsonl` (JSON Lines), and formatted tables.
+- **Download Full Manifest JSONs:** Save the complete JSON content of each manifest, named by their IDs.
+- **Save Results to File or Display in Terminal:** Flexible output options to suit your workflow.
+- **Debug Mode for Detailed Logging:** Provides comprehensive logs for troubleshooting and monitoring.
+- **Robust Error Handling with Automatic Retries:** Ensures reliable data fetching even in the face of transient network issues.
+- **Support for Paginated Collections:** Handles collections that span multiple pages seamlessly.
 
 ## Installation
 
@@ -31,7 +32,9 @@ loamiiif [OPTIONS] URL
 ### Options
 
 - `-o, --output PATH`: Save results to a file (JSON or plain text format)
-- `-f, --format [json|table]`: Output format (default: json)
+- `-f, --format [json|jsonl|table]`: Output format (default: json)
+- `-d, --download-manifests`: Download full JSON contents of each manifest
+- `-j, --json-output-dir PATH`: Directory to save full manifest JSONs
 - `--debug`: Enable debug mode with detailed logs
 - `--help`: Show help message
 
@@ -49,16 +52,28 @@ loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections/c69bb1ed-ac
 loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections/c69bb1ed-accb-4cfb-b60e-495b9911690f?as=iiif" --format table
 ```
 
-3. Save results to a file:
+3. Save results to a JSON file:
 
 ```bash
-loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections/c69bb1ed-accb-4cfb-b60e-495b9911690f?as=iiif" --output collection_manifests.json
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections/c69bb1ed-accb-4cfb-b60e-495b9911690f?as=iiif" --output manifests.json
 ```
 
-4. Enable debug logging:
+4. Save Results to a JSON Lines (jsonl) File:
+
+```bash
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections/c69bb1ed-accb-4cfb-b60e-495b9911690f?as=iiif" --format jsonl --output manifests.jsonl
+```
+
+5. Enable debug logging:
 
 ```bash
 loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --debug
+```
+
+6. Combine Downloading Manifests with JSON Output:
+
+```bash
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --format json --output manifests.json --download-manifests --json-output-dir ./manifests_json
 ```
 
 Example debug output (truncated):
@@ -96,6 +111,16 @@ The JSON output includes both manifests and collections:
   ],
   "collections": []
 }
+```
+
+### JSON Lines (jsonl)
+
+Each line contains a single manifest or collection URL:
+
+```jsonl
+{"manifest": "https://api.dc.library.northwestern.edu/api/v2/works/9d87853e-3955-4912-906f-6ddf0e2e3825?as=iiif"}
+{"manifest": "..."}
+{"collection": "https://api.dc.library.northwestern.edu/api/v2/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4?as=iiif"}
 ```
 
 ### Table
