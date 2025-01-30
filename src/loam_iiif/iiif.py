@@ -61,6 +61,44 @@ class IIIFClient:
         """
         self.session.close()
 
+    def _normalize_item_id(self, item: dict, parent_url: str) -> str:
+        """
+        Gets a normalized item ID from a IIIF item.
+
+        Args:
+            item (dict): The item from a collection
+            parent_url (str): The URL of the parent collection
+
+        Returns:
+            str: An normalized item ID.
+        """
+        id = item.get("id") or item.get("@id")
+
+        if not id:
+            logger.warning(
+                f"Item without ID encountered in collection {parent_url}: {item}"
+            )
+            return None
+
+        return id
+
+    def _normalize_item_type(self, item: dict) -> str:
+        """
+        Gets a normalized item type from a IIIF item.
+
+        Args:
+            item (dict): The item from a collection
+
+        Returns:
+            str: An normalized item type.
+        """
+        type = item.get("type") or item.get("@type")
+
+        if isinstance(type, list):
+            type = type[0]
+
+        return str(type).lower().split(":")[-1] if type else ""
+
     def fetch_json(self, url: str) -> dict:
         """
         Fetches JSON data from a given URL with error handling.
@@ -101,7 +139,7 @@ class IIIFClient:
         self, collection_url: str
     ) -> Tuple[List[str], List[str]]:
         """
-        Recursively traverses a IIIF collection, extracting unique manifests and nested collections.
+        Traverses a IIIF collection, extracting unique manifests and nested collections.
 
         Args:
             collection_url (str): The URL of the IIIF collection to traverse.
@@ -109,61 +147,57 @@ class IIIFClient:
         Returns:
             Tuple[List[str], List[str]]: A tuple containing a list of unique manifest URLs and a list of nested collection URLs.
         """
-        seen_manifests: Set[str] = set()
-        seen_collections: Set[str] = set()
-        manifests: List[str] = []
-        nested_collections: List[str] = []
+        manifest_ids: Set[str] = set()
+        collection_ids: Set[str] = set()
 
-        def _traverse(url: str):
-            if url in seen_collections:
+        collection_urls_queue = [collection_url]
+
+        while collection_urls_queue:
+            url = collection_urls_queue.pop(0)
+
+            if url in collection_ids:
                 logger.debug(f"Already processed collection: {url}")
-                return
-            logger.info(f"Processing collection: {url}")
-            seen_collections.add(url)
+                continue
+
             try:
                 data = self.fetch_json(url)
             except (requests.RequestException, ValueError):
                 logger.warning(f"Skipping collection due to fetch error: {url}")
                 return
 
-            # Determine IIIF Presentation API version and get items accordingly
-            items = data.get("items")
-            if items is None:
-                # Fallback for IIIF Presentation API 2.0
-                items = data.get("collections", []) + data.get("manifests", [])
+            collection_ids.add(url)
+            logger.info(f"Processing collection: {url}")
 
-            for item in items:
-                item_type = item.get("type") or item.get("@type")
-                item_id = item.get("id") or item.get("@id")
-                if not item_id:
-                    logger.warning(
-                        f"Item without ID encountered in collection {url}: {item}"
-                    )
-                    continue
+            try:
+                items = data.get("items") or (data.get("collections", []) + data.get("manifests", [])) # Fallback for IIIF Presentation API 2.0
 
-                # Normalize type for comparison
-                if isinstance(item_type, list):
-                    item_type = item_type[0]
-                item_type_normalized = (
-                    item_type.lower().split(":")[-1] if item_type else ""
-                )
+                manifest_items = [item for item in items if "manifest" in self._normalize_item_type(item)]
+                manifest_item_ids = [self._normalize_item_id(item, url) for item in manifest_items]
+                manifest_item_ids = list(filter(None, manifest_item_ids))
+                manifest_ids.update(manifest_item_ids)
 
-                if item_type_normalized == "manifest":
-                    if item_id not in seen_manifests:
-                        seen_manifests.add(item_id)
-                        manifests.append(item_id)
-                        logger.debug(f"Added manifest: {item_id}")
-                elif item_type_normalized == "collection":
-                    if item_id not in seen_collections:
-                        nested_collections.append(item_id)
-                        logger.debug(f"Found nested collection: {item_id}")
-                        _traverse(item_id)
-                else:
-                    logger.debug(f"Unknown item type '{item_type}' in collection {url}")
+                if logger.debug:
+                    for manifest_id in manifest_ids:
+                        logger.debug(f"Added manifest: {manifest_id}")
 
-        _traverse(collection_url)
+                nested_collection_items = [item for item in items if "collection" in self._normalize_item_type(item)]
+                nested_collection_items_ids = [self._normalize_item_id(item, url) for item in nested_collection_items]
+                nested_collection_items_ids = list(filter(None, nested_collection_items_ids))
+
+                if logger.debug:
+                    for collection_id in nested_collection_items_ids:
+                        logger.debug(f"Found nested collection: {collection_id}")
+
+                # An ID is also a URL
+                collection_urls_queue.extend(nested_collection_items_ids)
+
+            except Exception as e:
+                logger.error(f"Error processing {url}: {e}")
+                continue
+
         logger.info(f"Completed traversal of {collection_url}")
         logger.info(
-            f"Found {len(manifests)} unique manifests and {len(nested_collections)} nested collections"
+            f"Found {len(manifest_ids)} unique manifests and {(len(collection_ids) - 1)} nested collections" # -1 to exclude the root collection
         )
-        return manifests, nested_collections
+
+        return list(manifest_ids), list(collection_ids)
