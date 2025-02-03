@@ -1,7 +1,7 @@
 [project]
 name = "loam-iiif"
-version = "0.1.1"
-description = "Add your description here"
+version = "0.1.2"
+description = "A command-line tool for fetching IIIF Collections on the Web."
 readme = "README.md"
 authors = [{ name = "Brendan Quinn", email = "brendan-quinn@northwestern.edu" }]
 requires-python = ">=3.10"
