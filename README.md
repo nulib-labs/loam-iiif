@@ -76,6 +76,12 @@ loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --
 loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --format json --output manifests.json --download-manifests --json-output-dir ./manifests_json
 ```
 
+7. Set a maximum number of manifests to retrieve
+
+```bash
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --max-manifests=42
+```
+
 Example debug output (truncated):
 
 ```

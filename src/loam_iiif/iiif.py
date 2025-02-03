@@ -136,13 +136,14 @@ class IIIFClient:
             raise
 
     def get_manifests_and_collections_ids(
-        self, collection_url: str
+        self, collection_url: str, max_manifests: int | None = None
     ) -> Tuple[List[str], List[str]]:
         """
         Traverses a IIIF collection, extracting unique manifests and nested collections.
 
         Args:
             collection_url (str): The URL of the IIIF collection to traverse.
+            max_manifests (int | None): The maximum number of manifests to retrieve. If None, all manifests are retrieved.
 
         Returns:
             Tuple[List[str], List[str]]: A tuple containing a list of unique manifest URLs and a list of nested collection URLs.
@@ -176,6 +177,10 @@ class IIIFClient:
                 manifest_item_ids = list(filter(None, manifest_item_ids))
                 manifest_ids.update(manifest_item_ids)
 
+                if max_manifests and len(manifest_ids) >= max_manifests:
+                    logger.info(f"Reached maximum number of manifests: {max_manifests}")
+                    break
+
                 if logger.debug:
                     for manifest_id in manifest_ids:
                         logger.debug(f"Added manifest: {manifest_id}")
@@ -195,9 +200,11 @@ class IIIFClient:
                 logger.error(f"Error processing {url}: {e}")
                 continue
 
+        manifest_ids = list(manifest_ids)[:max_manifests]
+
         logger.info(f"Completed traversal of {collection_url}")
         logger.info(
             f"Found {len(manifest_ids)} unique manifests and {(len(collection_ids) - 1)} nested collections" # -1 to exclude the root collection
         )
 
-        return list(manifest_ids), list(collection_ids)
+        return manifest_ids, list(collection_ids)

@@ -5,7 +5,6 @@ import logging
 import os
 import re
 import sys
-from typing import List
 
 import click
 from rich.console import Console
@@ -66,6 +65,13 @@ def sanitize_filename(name: str) -> str:
     show_default=True,
     help="Directory to save the manifest JSON files.",
 )
+@click.option(
+    "--max-manifests",
+    "-m",
+    type=click.INT,
+    default=None,
+    help="Maximum number of manifests to retrieve. If not specified, all manifests are retrieved.",
+)
 def main(
     url: str,
     output: str,
@@ -73,6 +79,7 @@ def main(
     debug: bool,
     download_manifests: bool,
     json_output_dir: str,
+    max_manifests: int,
 ):
     """
     Traverse a IIIF collection URL and retrieve manifests.
@@ -93,7 +100,7 @@ def main(
 
     try:
         with IIIFClient() as client:
-            manifests, collections = client.get_manifests_and_collections_ids(url)
+            manifests, collections = client.get_manifests_and_collections_ids(url, max_manifests)
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         sys.exit(1)
