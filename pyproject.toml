@@ -1,6 +1,6 @@
 [project]
 name = "loam-iiif"
-version = "0.1.2"
+version = "0.1.3"
 description = "A command-line tool for fetching IIIF Collections on the Web."
 readme = "README.md"
 authors = [{ name = "Brendan Quinn", email = "brendan-quinn@northwestern.edu" }]

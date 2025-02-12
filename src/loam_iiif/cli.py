@@ -5,6 +5,8 @@ import logging
 import os
 import re
 import sys
+import tempfile
+from pathlib import Path
 
 import click
 from rich.console import Console
@@ -16,6 +18,8 @@ from .iiif import IIIFClient
 # Initialize Rich Console for logging (outputs to stderr)
 console = Console(stderr=True)
 
+# Get system temp directory
+DEFAULT_CACHE_DIR = os.path.join(tempfile.gettempdir(), "loam-iiif")
 
 def sanitize_filename(name: str) -> str:
     """
@@ -58,12 +62,10 @@ def sanitize_filename(name: str) -> str:
     help="Download full JSON contents of each manifest.",
 )
 @click.option(
-    "--json-output-dir",
-    "-j",
+    "--cache-dir",
+    "-c",
     type=click.Path(),
-    default="manifests",
-    show_default=True,
-    help="Directory to save the manifest JSON files.",
+    help="Directory to cache manifest JSON files. Defaults to system temp directory.",
 )
 @click.option(
     "--max-manifests",
@@ -72,14 +74,26 @@ def sanitize_filename(name: str) -> str:
     default=None,
     help="Maximum number of manifests to retrieve. If not specified, all manifests are retrieved.",
 )
+@click.option(
+    "--skip-cache",
+    is_flag=True,
+    help="Skip reading from cache but still write to it.",
+)
+@click.option(
+    "--no-cache",
+    is_flag=True,
+    help="Disable manifest caching completely.",
+)
 def main(
     url: str,
     output: str,
     format: str,
     debug: bool,
     download_manifests: bool,
-    json_output_dir: str,
+    cache_dir: str,
     max_manifests: int,
+    skip_cache: bool,
+    no_cache: bool,
 ):
     """
     Traverse a IIIF collection URL and retrieve manifests.
@@ -98,8 +112,13 @@ def main(
     if debug:
         logger.debug(f"Starting traversal of IIIF collection: {url}")
 
+    # Use provided cache dir or default to system temp
+    cache_directory = cache_dir if cache_dir else DEFAULT_CACHE_DIR
+    if debug:
+        logger.debug(f"Using cache directory: {cache_directory}")
+
     try:
-        with IIIFClient() as client:
+        with IIIFClient(cache_dir=cache_directory, skip_cache=skip_cache, no_cache=no_cache) as client:
             manifests, collections = client.get_manifests_and_collections_ids(url, max_manifests)
     except Exception as e:
         logger.error(f"An error occurred: {e}")
@@ -111,35 +130,41 @@ def main(
         )
 
     # Handle downloading of manifest JSONs if enabled
-    if download_manifests:
+    if download_manifests and not no_cache:
         if debug:
             logger.debug(f"Downloading JSON contents for {len(manifests)} manifests.")
-        # Ensure the output directory exists
-        os.makedirs(json_output_dir, exist_ok=True)
+
+        # If output is specified, treat it as a directory for manifest files
+        if output:
+            output_dir = Path(output)
+            output_dir.mkdir(parents=True, exist_ok=True)
+            if debug:
+                logger.debug(f"Will save manifest files to directory: {output_dir}")
+
+        # Manifests will be cached automatically by fetch_json()
         for idx, manifest_url in enumerate(manifests, start=1):
             try:
                 manifest_data = client.fetch_json(manifest_url)
-                # Extract manifest ID for filename
-                manifest_id = (
-                    manifest_data.get("id")
-                    or manifest_data.get("@id")
-                    or f"manifest_{idx}"
-                )
-                sanitized_id = sanitize_filename(manifest_id)
-                filename = f"{sanitized_id}.json"
-                filepath = os.path.join(json_output_dir, filename)
-                with open(filepath, "w", encoding="utf-8") as f:
-                    json.dump(manifest_data, f, indent=2)
+                if output:
+                    # Save each manifest to its own file in the output directory
+                    filename = sanitize_filename(manifest_url.split("/")[-1]) + ".json"
+                    manifest_path = output_dir / filename
+                    with open(manifest_path, "w", encoding="utf-8") as f:
+                        json.dump(manifest_data, f, indent=2)
                 if debug:
-                    logger.debug(f"Saved manifest {idx}/{len(manifests)} to {filepath}")
+                    logger.debug(f"Processed manifest {idx}/{len(manifests)}")
             except Exception as e:
-                logger.error(f"Failed to download or save manifest {manifest_url}: {e}")
-        if debug:
-            logger.debug(
-                f"All manifests have been processed and saved to {json_output_dir}"
-            )
+                logger.error(f"Failed to download manifest {manifest_url}: {e}")
 
-    # Prepare output based on format
+        if output:
+            if debug:
+                logger.debug(f"All manifests have been saved to {output_dir}")
+            # Exit here since we've handled the output already
+            return
+        elif debug:
+            logger.debug(f"All manifests have been cached to {cache_directory}")
+
+    # Regular output handling for manifest URLs continues below
     if format.lower() == "json":
         result = {
             "manifests": manifests,

@@ -31,55 +31,77 @@ loamiiif [OPTIONS] URL
 
 ### Options
 
-- `-o, --output PATH`: Save results to a file (JSON or plain text format)
+- `-o, --output PATH`: If used with `--download-manifests`, specifies directory to save manifest JSON files. Otherwise saves manifest URLs list to a file (JSON or plain text format)
 - `-f, --format [json|jsonl|table]`: Output format (default: json)
 - `-d, --download-manifests`: Download full JSON contents of each manifest
-- `-j, --json-output-dir PATH`: Directory to save full manifest JSONs
+- `--cache-dir, -c PATH`: Directory to cache manifest JSON files (defaults to system temp directory)
+- `--skip-cache`: Skip reading from cache but still write to it
+- `--no-cache`: Disable manifest caching completely
 - `--debug`: Enable debug mode with detailed logs
 - `--help`: Show help message
+- `--max-manifests, -m INTEGER`: Maximum number of manifests to retrieve
 
 ### Examples
 
-1. Basic usage (outputs JSON to stdout):
-
+#### Basic Usage
 ```bash
 loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections/c69bb1ed-accb-4cfb-b60e-495b9911690f?as=iiif"
 ```
 
-2. Output as a formatted table:
+#### Output Options
 
+Output as a formatted table:
 ```bash
-loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections/c69bb1ed-accb-4cfb-b60e-495b9911690f?as=iiif" --format table
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --format table
 ```
 
-3. Save results to a JSON file:
-
+Save manifest URLs to different formats:
 ```bash
-loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections/c69bb1ed-accb-4cfb-b60e-495b9911690f?as=iiif" --output manifests.json
+# JSON output
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --output manifests.json
+
+# JSON Lines (jsonl) output
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --format jsonl --output manifests.jsonl
 ```
 
-4. Save Results to a JSON Lines (jsonl) File:
-
+Download manifest contents to a directory:
 ```bash
-loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections/c69bb1ed-accb-4cfb-b60e-495b9911690f?as=iiif" --format jsonl --output manifests.jsonl
+# Downloads full manifest JSON files to ./manifest_downloads/ directory
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --download-manifests --output ./manifest_downloads
 ```
 
-5. Enable debug logging:
+#### Advanced Features
 
+Download manifests and save JSON output:
+```bash
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --format json --output manifests.json --download-manifests
+```
+
+Limit the number of manifests:
+```bash
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --max-manifests=42
+```
+
+Enable debug logging:
 ```bash
 loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --debug
 ```
 
-6. Combine Downloading Manifests with JSON Output:
+#### Cache Control
 
+Use a custom cache directory:
 ```bash
-loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --format json --output manifests.json --download-manifests --json-output-dir ./manifests_json
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --cache-dir ./my-cache-dir
 ```
 
-7. Set a maximum number of manifests to retrieve
-
+Skip reading from cache but still write to it:
 ```bash
-loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --max-manifests=42
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --skip-cache
+```
+
+Disable caching completely:
+```bash
+loamiiif "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --no-cache
 ```
 
 Example debug output (truncated):
@@ -96,12 +118,20 @@ Example debug output (truncated):
                       # ... more manifests and collections ...
 ```
 
-Debug mode shows detailed information about:
+## Caching Behavior
 
-- Collection traversal progress
-- HTTP requests and responses
-- Discovered manifests and nested collections
-- Any errors or issues encountered
+The tool implements manifest caching to improve performance and reduce load on IIIF servers:
+
+- By default, manifests are cached in your system's temporary directory (`/tmp` on Unix-like systems)
+- Use `--cache-dir` to specify a custom cache location
+- `--skip-cache` will ignore existing cache but still write new cache entries (useful for refreshing stale data)
+- `--no-cache` completely disables caching (not recommended for large collections)
+
+Cached manifests are stored as JSON files named using a sanitized version of their URLs. The cache is particularly useful when:
+
+- Working with large collections that you'll need to process multiple times
+- Using the `--download-manifests` option to save full manifest contents
+- Running the tool repeatedly during development or testing
 
 ## Output Formats
 

@@ -1,11 +1,27 @@
+import json
 import logging
+import re
 from typing import List, Set, Tuple, Optional
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from .cache import ManifestCache
+
 logger = logging.getLogger(__name__)
+
+
+class TrailingCommaJSONDecoder(json.JSONDecoder):
+    def decode(self, s):
+        # More robust handling of trailing commas in nested structures
+        def fix_commas(match):
+            # Replace any comma followed by closing bracket/brace
+            return match.group(1)
+            
+        # Fix array and object trailing commas at any nesting level
+        s = re.sub(r',(\s*[\]\}])', fix_commas, s)
+        return super().decode(s)
 
 
 class IIIFClient:
@@ -25,6 +41,9 @@ class IIIFClient:
         status_forcelist: Optional[List[int]] = None,
         allowed_methods: Optional[List[str]] = None,
         timeout: Optional[float] = 10.0,
+        cache_dir: Optional[str] = "manifests",
+        skip_cache: bool = False,
+        no_cache: bool = False,
     ):
         """
         Initializes the IIIFClient with a configured requests session.
@@ -35,9 +54,15 @@ class IIIFClient:
             status_forcelist (Optional[List[int]]): HTTP status codes to retry on.
             allowed_methods (Optional[List[str]]): HTTP methods to retry.
             timeout (Optional[float]): Timeout for HTTP requests in seconds.
+            cache_dir (Optional[str]): Directory for caching manifests.
+            skip_cache (bool): If True, bypass cache for reads but still write.
+            no_cache (bool): If True, disable caching completely.
         """
         self.timeout = timeout
         self.session = requests.Session()
+        self.skip_cache = skip_cache
+        self.no_cache = no_cache
+        
         retries = Retry(
             total=retry_total,
             backoff_factor=backoff_factor,
@@ -48,6 +73,9 @@ class IIIFClient:
         adapter = HTTPAdapter(max_retries=retries)
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
+        
+        # Initialize cache if enabled
+        self.cache = None if no_cache else ManifestCache(cache_dir)
 
     def __enter__(self):
         """
@@ -101,7 +129,7 @@ class IIIFClient:
 
     def fetch_json(self, url: str) -> dict:
         """
-        Fetches JSON data from a given URL with error handling.
+        Fetches JSON data from a given URL with error handling and caching.
 
         Args:
             url (str): The URL to fetch data from.
@@ -114,6 +142,12 @@ class IIIFClient:
             requests.RequestException: For other request-related errors.
             ValueError: If the response content is not valid JSON.
         """
+        # Try cache first if enabled and not skipping
+        if self.cache and not self.skip_cache:
+            cached_data = self.cache.get(url)
+            if cached_data is not None:
+                return cached_data
+                
         logger.debug(f"Fetching URL: {url}")
         try:
             response = self.session.get(
@@ -122,8 +156,14 @@ class IIIFClient:
                 headers={"Accept": "application/json, application/ld+json"},
             )
             response.raise_for_status()
-            data = response.json()
+            # Use custom decoder that handles trailing commas
+            data = json.loads(response.text, cls=TrailingCommaJSONDecoder)
             logger.debug(f"Successfully fetched data from {url}")
+            
+            # Cache the response if caching is enabled
+            if self.cache and not self.no_cache:
+                self.cache.put(url, data)
+                
             return data
         except requests.HTTPError as e:
             logger.error(f"HTTP error while fetching {url}: {e}")
@@ -164,7 +204,7 @@ class IIIFClient:
                 data = self.fetch_json(url)
             except (requests.RequestException, ValueError):
                 logger.warning(f"Skipping collection due to fetch error: {url}")
-                return
+                continue  # Continue processing other collections instead of returning
 
             collection_ids.add(url)
             logger.info(f"Processing collection: {url}")
