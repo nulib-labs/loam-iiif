@@ -6,6 +6,9 @@ from typing import List, Set, Tuple, Optional
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from iiif_prezi3 import Manifest
+from piffle.image import IIIFImageClient
+from piffle.presentation import IIIFPresentation
 
 from .cache import ManifestCache
 
@@ -29,7 +32,7 @@ class IIIFClient:
     A client for interacting with IIIF APIs, handling data fetching with retries.
     """
 
-    DEFAULT_RETRY_TOTAL = 5
+    DEFAULT_RETRY_TOTAL = 2
     DEFAULT_BACKOFF_FACTOR = 1
     DEFAULT_STATUS_FORCELIST = [429, 500, 502, 503, 504]
     DEFAULT_ALLOWED_METHODS = ["GET", "POST"]
@@ -156,7 +159,6 @@ class IIIFClient:
                 headers={"Accept": "application/json, application/ld+json"},
             )
             response.raise_for_status()
-            # Use custom decoder that handles trailing commas
             data = json.loads(response.text, cls=TrailingCommaJSONDecoder)
             logger.debug(f"Successfully fetched data from {url}")
             
@@ -206,9 +208,6 @@ class IIIFClient:
                 logger.warning(f"Skipping collection due to fetch error: {url}")
                 continue  # Continue processing other collections instead of returning
 
-            collection_ids.add(url)
-            logger.info(f"Processing collection: {url}")
-
             try:
                 items = data.get("items") or (data.get("collections", []) + data.get("manifests", [])) # Fallback for IIIF Presentation API 2.0
 
@@ -221,20 +220,24 @@ class IIIFClient:
                     logger.info(f"Reached maximum number of manifests: {max_manifests}")
                     break
 
-                if logger.debug:
-                    for manifest_id in manifest_ids:
-                        logger.debug(f"Added manifest: {manifest_id}")
+                # Log each manifest added
+                for manifest_id in manifest_ids:
+                    logger.debug(f"Added manifest: {manifest_id}")
 
                 nested_collection_items = [item for item in items if "collection" in self._normalize_item_type(item)]
                 nested_collection_items_ids = [self._normalize_item_id(item, url) for item in nested_collection_items]
                 nested_collection_items_ids = list(filter(None, nested_collection_items_ids))
 
-                if logger.debug:
-                    for collection_id in nested_collection_items_ids:
-                        logger.debug(f"Found nested collection: {collection_id}")
+                # Log each nested collection found
+                for collection_id in nested_collection_items_ids:
+                    logger.debug(f"Found nested collection: {collection_id}")
 
                 # An ID is also a URL
                 collection_urls_queue.extend(nested_collection_items_ids)
+                
+                # Only add collection to processed set if we successfully processed it
+                collection_ids.add(url)
+                logger.info(f"Processing collection: {url}")
 
             except Exception as e:
                 logger.error(f"Error processing {url}: {e}")
@@ -248,3 +251,130 @@ class IIIFClient:
         )
 
         return manifest_ids, list(collection_ids)
+
+    def get_manifest_images(self, manifest_url: str, width: int = 768, height: int = 2000, format: str = 'jpg', exact: bool = False, use_max: bool = False) -> List[str]:
+        """
+        Extract formatted image URLs from a manifest with specified dimensions.
+
+        Args:
+            manifest_url (str): The URL of the IIIF manifest
+            width (int): Desired width of images
+            height (int): Desired height of images
+            format (str): Image format (e.g., 'jpg', 'png')
+            exact (bool): If True, use exact dimensions without aspect ratio preservation
+            use_max (bool): If True, use 'max' size for v3 or 'full' size for v2 instead of specific dimensions
+
+        Returns:
+            List[str]: List of formatted IIIF image URLs
+        """
+        try:
+            data = self.fetch_json(manifest_url)
+            image_ids = []
+
+            # Check @context to determine IIIF version
+            context = data.get("@context")
+            is_v3 = context == "http://iiif.io/api/presentation/3/context.json"
+            is_v2 = context == "http://iiif.io/api/presentation/2/context.json"
+
+            # Parse manifest based on version
+            if is_v3:
+                try:
+                    items = data.get("items", [])
+                    for canvas in items:
+                        if not isinstance(canvas, dict):
+                            continue
+                            
+                        # Handle both items and sequences (some v3 can use sequences)
+                        canvas_items = canvas.get("items", [])
+                        
+                        for anno_page in canvas_items:
+                            if not isinstance(anno_page, dict):
+                                continue
+                                
+                            # Get items from annotation page
+                            anno_items = anno_page.get("items", [])
+                            for annotation in anno_items:
+                                if not isinstance(annotation, dict):
+                                    continue
+                                    
+                                body = annotation.get("body", {})
+                                if isinstance(body, dict):
+                                    # Try to get image ID from different possible locations
+                                    image_id = None
+                                    
+                                    # First try direct ID from body
+                                    if "id" in body:
+                                        image_id = body["id"]
+                                        # If it's a full image URL, extract base URL
+                                        if '/full/' in image_id:
+                                            image_id = image_id.split('/full/')[0]
+                                    
+                                    # If no direct ID, try service
+                                    if not image_id and "service" in body:
+                                        service = body["service"]
+                                        # Handle both list and direct object formats
+                                        if isinstance(service, list) and service:
+                                            service = service[0]
+                                        if isinstance(service, dict):
+                                            # Try both @id and id
+                                            image_id = service.get("@id") or service.get("id")
+                                            # Add even if None to trigger error handling
+                                            image_ids.append(image_id)
+                                    elif image_id:
+                                        image_ids.append(image_id)
+                                        
+                except Exception as e:
+                    logger.error(f"Error parsing IIIF 3.0 manifest: {e}")
+                    return []
+
+            elif is_v2:
+                # IIIF 2.0 parsing
+                if "sequences" in data:
+                    for canvas in data["sequences"][0]["canvases"]:
+                        if "images" in canvas:
+                            for image in canvas["images"]:
+                                # Check for direct resource @id first (NLS style)
+                                if "@id" in image.get("resource", {}):
+                                    image_id = image["resource"]["@id"]
+                                    # Convert full image URL to IIIF base URL
+                                    if '/full/' in image_id:
+                                        parts = image_id.split('/full/')
+                                        image_id = parts[0]
+                                    image_ids.append(image_id)
+                                # Fallback to service ID if available
+                                elif "@id" in image["resource"].get("service", {}):
+                                    image_id = image["resource"]["service"]["@id"]
+                                    image_ids.append(image_id)
+            else:
+                logger.error(f"Unsupported or missing IIIF context in manifest: {context}")
+                return []
+
+            if not image_ids:
+                logger.debug(f"No image IDs found in manifest {manifest_url}")
+                return []
+
+            urls = []
+            for image_id in image_ids:
+                try:
+                    if image_id is None:
+                        raise TypeError("expected string or bytes-like object")
+                    # Remove any trailing /info.json
+                    image_id = re.sub(r'/info\.json$', '', image_id)
+                    # Format as IIIF URL with size parameter based on version and options
+                    if not re.search(r'/full/(?:max|full|!\d+,\d+|\d+,\d+)/0/default\.jpg$', image_id):
+                        if use_max:
+                            # Use 'full' for v2 manifests and 'max' for v3
+                            size_param = "full" if is_v2 else "max"
+                        else:
+                            size_param = f"{'!' if not exact else ''}{width},{height}"
+                        image_id = f"{image_id}/full/{size_param}/0/default.{format}"
+                    urls.append(image_id)
+                except Exception as e:
+                    logger.error(f"Error formatting image URL for ID {image_id}: {e}")
+                    continue
+
+            return urls
+
+        except Exception as e:
+            logger.error(f"Error extracting images from manifest {manifest_url}: {e}")
+            raise

@@ -1,0 +1,129 @@
+{
+    "@context": "http://iiif.io/api/presentation/2/context.json",
+    "@id": "https://iiif.bodleian.ox.ac.uk/iiif/manifest/dce4084c-d5e5-4063-b152-db0c1d44d13d.json",
+    "@type": "sc:Manifest",
+    "label": "Bodleian Library Broxb. 55.3-4",
+    "description": "Holy Bible. Book of Common Prayer (Psalms)",
+    "metadata": [
+      {
+        "label": "Homepage",
+        "value": "<span><a href=\"https://digital.bodleian.ox.ac.uk/objects/dce4084c-d5e5-4063-b152-db0c1d44d13d/\">View on Digital Bodleian</a></span>"
+      },
+      {
+        "label": "Title",
+        "value": "Holy Bible. Book of Common Prayer (Psalms)"
+      },
+      {
+        "label": "Shelfmark",
+        "value": "Bodleian Library Broxb. 55.3-4"
+      },
+      {
+        "label": "Language",
+        "value": "English"
+      },
+      {
+        "label": "Date Statement",
+        "value": "1832-1833"
+      },
+      {
+        "label": "Place of Origin",
+        "value": "Oxford"
+      },
+      {
+        "label": "Description",
+        "value": "An English 'Cathedral style' binding. English (London), 19th century. James Barritt. Black morocco. Both volumes and box embossed with gothic chancel window and holy table below, with 'IHS' on frontal and Communion vessels, flanked by Moses and Aaron."
+      },
+      {
+        "label": "Collection",
+        "value": "Bindings"
+      },
+      {
+        "label": "Record Created",
+        "value": "2018-08-01T13:00:00Z"
+      },
+      {
+        "label": "Holding Institution",
+        "value": "Bodleian Libraries, University of Oxford"
+      }
+    ],
+    "navDate": "1832-01-01T00:00:00Z",
+    "rendering": {
+      "@id": "https://digital.bodleian.ox.ac.uk/objects/dce4084c-d5e5-4063-b152-db0c1d44d13d/",
+      "label": "View on Digital Bodleian",
+      "format": "text/html"
+    },
+    "attribution": "<span>Photo: © Bodleian Libraries, University of Oxford. Terms of use: <a href=\"https://creativecommons.org/licenses/by-nc/4.0/\">CC BY-NC 4.0</a>. For more information, please see <a href=\"https://digital.bodleian.ox.ac.uk/terms/\">https://digital.bodleian.ox.ac.uk/terms/</a></span>",
+    "logo": {
+      "@id": "https://iiif.bodleian.ox.ac.uk/iiif/image/f27e28db-0b08-4f16-9bdf-3565f591fb71/full/256,/0/default.jpg",
+      "@type": "dctypes:Image",
+      "format": "image/jpeg",
+      "service": {
+        "@context": "http://iiif.io/api/image/2/context.json",
+        "profile": "http://iiif.io/api/image/2/level1.json",
+        "@id": "https://iiif.bodleian.ox.ac.uk/iiif/image/f27e28db-0b08-4f16-9bdf-3565f591fb71"
+      }
+    },
+    "thumbnail": {
+      "@id": "https://iiif.bodleian.ox.ac.uk/iiif/image/43847824-6ec2-4bad-ba49-8acbeba6a6f2/full/256,/0/default.jpg",
+      "@type": "dctypes:Image",
+      "format": "image/jpeg",
+      "service": {
+        "@context": "http://iiif.io/api/image/2/context.json",
+        "profile": "http://iiif.io/api/image/2/level1.json",
+        "@id": "https://iiif.bodleian.ox.ac.uk/iiif/image/43847824-6ec2-4bad-ba49-8acbeba6a6f2"
+      }
+    },
+    "viewingHint": "paged",
+    "viewingDirection": "left-to-right",
+    "sequences": [
+      {
+        "@id": "https://iiif.bodleian.ox.ac.uk/iiif/sequence/dce4084c-d5e5-4063-b152-db0c1d44d13d_default.json",
+        "@type": "sc:Sequence",
+        "label": "Default",
+        "canvases": [
+          {
+            "@id": "https://iiif.bodleian.ox.ac.uk/iiif/canvas/43847824-6ec2-4bad-ba49-8acbeba6a6f2.json",
+            "@type": "sc:Canvas",
+            "label": "Box and two volumes",
+            "width": 9272,
+            "height": 5752,
+            "images": [
+              {
+                "@id": "https://iiif.bodleian.ox.ac.uk/iiif/annotation/43847824-6ec2-4bad-ba49-8acbeba6a6f2.json",
+                "@type": "oa:Annotation",
+                "motivation": "sc:painting",
+                "on": "https://iiif.bodleian.ox.ac.uk/iiif/canvas/43847824-6ec2-4bad-ba49-8acbeba6a6f2.json",
+                "resource": {
+                  "@id": "https://iiif.bodleian.ox.ac.uk/iiif/image/43847824-6ec2-4bad-ba49-8acbeba6a6f2",
+                  "@type": "dctypes:Image",
+                  "format": "image/jpeg",
+                  "width": 9272,
+                  "height": 5752,
+                  "service": {
+                    "@id": "https://iiif.bodleian.ox.ac.uk/iiif/image/43847824-6ec2-4bad-ba49-8acbeba6a6f2",
+                    "@context": "http://iiif.io/api/image/2/context.json",
+                    "profile": "http://iiif.io/api/image/2/level1.json"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "structures": [
+      {
+        "@id": "https://iiif.bodleian.ox.ac.uk/iiif/range/dce4084c-d5e5-4063-b152-db0c1d44d13d/LOG_0000",
+        "@type": "sc:Range",
+        "label": "Broxb. 55.3-4",
+        "viewingHint": "top",
+        "canvases": [
+          "https://iiif.bodleian.ox.ac.uk/iiif/canvas/43847824-6ec2-4bad-ba49-8acbeba6a6f2.json"
+        ],
+        "metadata": [
+          
+        ],
+        "startCanvas": "https://iiif.bodleian.ox.ac.uk/iiif/canvas/43847824-6ec2-4bad-ba49-8acbeba6a6f2.json"
+      }
+    ]
+  }

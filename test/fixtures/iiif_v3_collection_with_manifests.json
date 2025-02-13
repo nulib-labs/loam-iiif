@@ -1,0 +1,213 @@
+{
+    "@context": [
+      "http://iiif.io/api/presentation/3/context.json"
+    ],
+    "id": "https://api.dc.library.northwestern.edu/api/v2/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4?as=iiif",
+    "type": "Collection",
+    "label": {
+      "none": [
+        "Ramón Casas Sketchbooks"
+      ]
+    },
+    "summary": {
+      "none": [
+        "Gift of the Deering Family. These sketches by Catalan artist Ramón Casas (1866-1932) document the work of an under-represented artist who was influential in modernist art circles in Barcelona and Paris along with his peers John Singer Sargent, Henri de Toulouse-Lautrec, and the young Pablo Picasso. Three bound hardcover volumes of sketches came to the Northwestern University Libraries in 1998 as part of a donation of books that had belonged to NU benefactor Charles Deering (1852-1927). Deering and Casas met in 1904 and established a lifelong friendship. At some point before the donation, a few hundred loose Casas drawings, postcards, and illustrated letters dating from 1891 to 1912 were bound into their current form. There were at least five volumes in the set; two remain in private collections."
+      ]
+    },
+    "items": [
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/e40479c4-06cb-48be-9d6b-adf47f238852?as=iiif",
+        "type": "Manifest",
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/items/e40479c4-06cb-48be-9d6b-adf47f238852",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "Ramón Casas. Sketchbook IV"
+              ]
+            }
+          }
+        ],
+        "label": {
+          "none": [
+            "Ramón Casas. Sketchbook IV"
+          ]
+        },
+        "summary": {
+          "none": [
+            "Image"
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/works/e40479c4-06cb-48be-9d6b-adf47f238852/thumbnail",
+            "format": "image/jpeg",
+            "type": "Image",
+            "width": 400,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/f4720687-61b6-4dcd-aed0-b70eff985583?as=iiif",
+        "type": "Manifest",
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/items/f4720687-61b6-4dcd-aed0-b70eff985583",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "Ramón Casas. Sketchbook III"
+              ]
+            }
+          }
+        ],
+        "label": {
+          "none": [
+            "Ramón Casas. Sketchbook III"
+          ]
+        },
+        "summary": {
+          "none": [
+            "Image"
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/works/f4720687-61b6-4dcd-aed0-b70eff985583/thumbnail",
+            "format": "image/jpeg",
+            "type": "Image",
+            "width": 400,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/faafca34-ecf4-4848-838a-da220d864042?as=iiif",
+        "type": "Manifest",
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/items/faafca34-ecf4-4848-838a-da220d864042",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "Ramón Casas. Sketchbook II"
+              ]
+            }
+          }
+        ],
+        "label": {
+          "none": [
+            "Ramón Casas. Sketchbook II"
+          ]
+        },
+        "summary": {
+          "none": [
+            "Image"
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/works/faafca34-ecf4-4848-838a-da220d864042/thumbnail",
+            "format": "image/jpeg",
+            "type": "Image",
+            "width": 400,
+            "height": 400
+          }
+        ]
+      }
+    ],
+    "requiredStatement": {
+      "label": {
+        "none": [
+          "Attribution"
+        ]
+      },
+      "value": {
+        "none": [
+          "Courtesy of Northwestern University Libraries"
+        ]
+      }
+    },
+    "provider": [
+      {
+        "id": "https://www.library.northwestern.edu/",
+        "type": "Agent",
+        "label": {
+          "none": [
+            "Northwestern University Libraries"
+          ]
+        },
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/",
+            "type": "Text",
+            "label": {
+              "none": [
+                "Northwestern University Libraries Digital Collections Homepage"
+              ]
+            },
+            "format": "text/html",
+            "language": [
+              "en"
+            ]
+          }
+        ],
+        "logo": [
+          {
+            "id": "https://iiif.dc.library.northwestern.edu/iiif/2/00000000-0000-0000-0000-000000000003/full/pct:50/0/default.webp",
+            "type": "Image",
+            "format": "image/webp",
+            "height": 139,
+            "width": 1190
+          }
+        ]
+      }
+    ],
+    "logo": [
+      {
+        "id": "https://iiif.dc.library.northwestern.edu/iiif/2/00000000-0000-0000-0000-000000000003/full/pct:50/0/default.webp",
+        "type": "Image",
+        "format": "image/webp",
+        "height": 139,
+        "width": 1190
+      }
+    ],
+    "seeAlso": [
+      {
+        "id": "https://api.dc.library.northwestern.edu/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4",
+        "type": "Dataset",
+        "format": "application/json",
+        "label": {
+          "none": [
+            "Northwestern University Libraries Digital Collections API"
+          ]
+        }
+      }
+    ],
+    "homepage": [
+      {
+        "id": "https://dc.library.northwestern.edu/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4",
+        "type": "Text",
+        "format": "text/html",
+        "label": {
+          "none": [
+            "Ramón Casas Sketchbooks"
+          ]
+        }
+      }
+    ],
+    "thumbnail": [
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4/thumbnail",
+        "type": "Image",
+        "format": "image/jpeg",
+        "width": 400,
+        "height": 400
+      }
+    ]
+  }

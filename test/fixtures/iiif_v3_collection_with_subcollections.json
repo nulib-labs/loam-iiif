@@ -1,0 +1,458 @@
+{
+    "@context": [
+      "http://iiif.io/api/presentation/3/context.json"
+    ],
+    "id": "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif",
+    "type": "Collection",
+    "label": {
+      "none": [
+        "Northwestern University Libraries Digital Collections"
+      ]
+    },
+    "summary": {
+      "none": [
+        "Explore digital resources from the Northwestern University Library collections – including letters, photographs, diaries, maps, and audiovisual materials."
+      ]
+    },
+    "items": [
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "Ramón Casas Sketchbooks"
+          ]
+        },
+        "summary": {
+          "none": [
+            "Gift of the Deering Family. These sketches by Catalan artist Ramón Casas (1866-1932) document the work of an under-represented artist who was influential in modernist art circles in Barcelona and Paris along with his peers John Singer Sargent, Henri de Toulouse-Lautrec, and the young Pablo Picasso. Three bound hardcover volumes of sketches came to the Northwestern University Libraries in 1998 as part of a donation of books that had belonged to NU benefactor Charles Deering (1852-1927). Deering and Casas met in 1904 and established a lifelong friendship. At some point before the donation, a few hundred loose Casas drawings, postcards, and illustrated letters dating from 1891 to 1912 were bound into their current form. There were at least five volumes in the set; two remain in private collections."
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4/thumbnail",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": 400,
+            "height": 400
+          }
+        ],
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "Ramón Casas Sketchbooks"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/267bed1b-f808-4c51-acb1-0288378819d2?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "Map and Atlas Collection"
+          ]
+        },
+        "summary": {
+          "none": [
+            "Northwestern University Libraries’ Map & Atlas Collection allows access to an ever-growing selection of our cartographic resources in high resolution."
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/collections/267bed1b-f808-4c51-acb1-0288378819d2/thumbnail",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": 400,
+            "height": 400
+          }
+        ],
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/collections/267bed1b-f808-4c51-acb1-0288378819d2",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "Map and Atlas Collection"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/8fdc5942-12a0-4abd-8f43-5d19b37ece75?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "McCormick Library of Special Collections Audiovisual Collection"
+          ]
+        },
+        "summary": {
+          "none": [
+            "McCormick Library of Special Collections Audiovisual Collection"
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/collections/8fdc5942-12a0-4abd-8f43-5d19b37ece75/thumbnail",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": 400,
+            "height": 400
+          }
+        ],
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/collections/8fdc5942-12a0-4abd-8f43-5d19b37ece75",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "McCormick Library of Special Collections Audiovisual Collection"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/35c3a71a-ce83-4410-82ec-640e01da86eb?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "Dublin Gate Theatre Archive"
+          ]
+        },
+        "summary": {
+          "none": [
+            "The Dublin Gate Theatre was founded by Hilton Edwards (1903-1982) and Micheál MacLiammóir (1899-1978), two Englishmen who had met touring in Ireland with Anew McMaster's acting company.  The press cuttings books nos. 1, 3-10, 12-66, are those of the Gate and numbered as held by them. Books 2 and 11 are missing. The inclusive dates are 2/10/1928 to 6/2/1971. Much valuable information can be gleaned from the fragile clippings."
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/collections/35c3a71a-ce83-4410-82ec-640e01da86eb/thumbnail",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": 400,
+            "height": 400
+          }
+        ],
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/collections/35c3a71a-ce83-4410-82ec-640e01da86eb",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "Dublin Gate Theatre Archive"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/dcaa3bc4-5f25-41c7-8a4d-b732c8c83450?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "Hamid Naficy (1944- ) Papers"
+          ]
+        },
+        "summary": {
+          "none": [
+            "The Hamid Naficy Papers, spanning the years 1897-2017 (bulk 1967-2012), comprise 149 boxes and 1 spreadsheet born-digital file of 0.13 megabytes and include biographical, professional, and research files; files on Naficy’s writings and publications; photographs; and audiovisual materials. Hamid Naficy, Sheikh Hamad Bin Khalifa Al-Thani Professor in Communication in the Radio/Television/Film department at Northwestern University, joined the faculty in 2006."
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/collections/dcaa3bc4-5f25-41c7-8a4d-b732c8c83450/thumbnail",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": 400,
+            "height": 400
+          }
+        ],
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/collections/dcaa3bc4-5f25-41c7-8a4d-b732c8c83450",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "Hamid Naficy (1944- ) Papers"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/450b857e-2e74-491e-9ef1-2c73e49f0c16?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "George Silas Duntley Photographs"
+          ]
+        },
+        "summary": {
+          "none": [
+            "The photographs of George S. Duntley fill 8 boxes and cover the years from approximately 1899-1918. The collection consists of dry plate negatives and record Duntley’s years in Chicago and Evanston while he was attending Northwestern University Medical School. Also included are photographs taken in Bushnell, Illinois, his home town and surrounding areas."
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/collections/450b857e-2e74-491e-9ef1-2c73e49f0c16/thumbnail",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": 400,
+            "height": 400
+          }
+        ],
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/collections/450b857e-2e74-491e-9ef1-2c73e49f0c16",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "George Silas Duntley Photographs"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/3121f8ee-5265-4b19-bae3-59f96e9ac01a?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "Aldridge Collection"
+          ]
+        },
+        "summary": {
+          "none": [
+            "The Aldridge Collection consists of materials relating to 19th century African-American tragedian Ira Frederick Aldridge (1807-1867), and his musician daughters Amanda Aldridge (1866-1956) and Luranah Aldridge (1860-1932).  The bulk of the material relating to the daughters is related to Amanda Aldridge, an opera singer who also composed music, sometimes under the pseudonym Montague Ring.  Luranah was also a successful opera singer. "
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/collections/3121f8ee-5265-4b19-bae3-59f96e9ac01a/thumbnail",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": 400,
+            "height": 400
+          }
+        ],
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/collections/3121f8ee-5265-4b19-bae3-59f96e9ac01a",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "Aldridge Collection"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/0ba3a256-4952-44ea-b0d9-0772835ff137?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "Ronald J. Sullivan Photograph Collection"
+          ]
+        },
+        "summary": {
+          "none": [
+            "The Ronald J. Sullivan Photograph Collection is an extensive collection of photographs and slides of public and commercial buses and public transit and commuter trains, dating from 1946-2000. The bulk of the collection comprises photographs taken by Ronald J. Sullivan, an amateur photographer and rail and bus enthusiast; also included are historic images of Chicago-area transit that were part of Sullivan’s personal collection, and which supplement  the photographer’s original material. The majority of the photographs were taken in Chicago, Illinois and the surrounding area, with a few in other cities and international locations. Sullivan documented nearly all of the photographs and slides in this collection in detail with bus or train numbers, route numbers, street intersections or stations, and dates. For the sake of consistency and ease of searching for specific items the City of Chicago Street Guide abbreviations and a list of common abbreviations found in the collection will be used. "
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/collections/0ba3a256-4952-44ea-b0d9-0772835ff137/thumbnail",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": 400,
+            "height": 400
+          }
+        ],
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/collections/0ba3a256-4952-44ea-b0d9-0772835ff137",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "Ronald J. Sullivan Photograph Collection"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/f65b3ae2-e4a9-40b7-b0a0-b48416eae767?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "Asher Golden Collection"
+          ]
+        },
+        "summary": {
+          "none": [
+            "The Asher Golden Collection contains 29 audiocassette recordings and a small amount of paper documents from Northwestern University’s 1995-1997 football seasons. A sports reporter for Northwestern’s WNUR radio station, Golden covered Wildcat football between 1995 and the January 1, 1997 Citrus Bowl."
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/collections/f65b3ae2-e4a9-40b7-b0a0-b48416eae767/thumbnail",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": 400,
+            "height": 400
+          }
+        ],
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/collections/f65b3ae2-e4a9-40b7-b0a0-b48416eae767",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "Asher Golden Collection"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/6f58c85f-f1fc-43c1-be52-678867659ff6?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "The Humphrey Winterton Collection of East African Photographs: 1860-1960"
+          ]
+        },
+        "summary": {
+          "none": [
+            "The collection depicts the breadth of African experience; documents African life; European life in Africa in all its manifestations; and the African landscape, in particular as it changed over time. Included are photographs showing the building of East Africa’s railways, the growth of its urban centers and the development of European colonial administration. There are outstanding examples of portraiture. The collection provides an unsurpassed resource for the study of the history of photography in East Africa. \n\nCultural Context: Content on this site is drawn from a broad range of historical sources including materials that may contain offensive images or language reflecting the nature of European colonialism in Africa. Such materials should be viewed in the context of the time and place in which they were created. The images and text in this site are presented as specific, original artifacts recording the attitudes, perspectives and beliefs of a different era. Northwestern University does not endorse the views expressed in this collection which may contain images and text offensive to some researchers."
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/collections/6f58c85f-f1fc-43c1-be52-678867659ff6/thumbnail",
+            "type": "Image",
+            "format": "image/jpeg",
+            "width": 400,
+            "height": 400
+          }
+        ],
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/collections/6f58c85f-f1fc-43c1-be52-678867659ff6",
+            "type": "Text",
+            "format": "text/html",
+            "label": {
+              "none": [
+                "The Humphrey Winterton Collection of East African Photographs: 1860-1960"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif&page=2",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "Next page"
+          ]
+        }
+      }
+    ],
+    "requiredStatement": {
+      "label": {
+        "none": [
+          "Attribution"
+        ]
+      },
+      "value": {
+        "none": [
+          "Courtesy of Northwestern University Libraries"
+        ]
+      }
+    },
+    "provider": [
+      {
+        "id": "https://www.library.northwestern.edu/",
+        "type": "Agent",
+        "label": {
+          "none": [
+            "Northwestern University Libraries"
+          ]
+        },
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/",
+            "type": "Text",
+            "label": {
+              "none": [
+                "Northwestern University Libraries Digital Collections Homepage"
+              ]
+            },
+            "format": "text/html",
+            "language": [
+              "en"
+            ]
+          }
+        ],
+        "logo": [
+          {
+            "id": "https://iiif.dc.library.northwestern.edu/iiif/2/00000000-0000-0000-0000-000000000003/full/pct:50/0/default.webp",
+            "type": "Image",
+            "format": "image/webp",
+            "height": 139,
+            "width": 1190
+          }
+        ]
+      }
+    ],
+    "logo": [
+      {
+        "id": "https://iiif.dc.library.northwestern.edu/iiif/2/00000000-0000-0000-0000-000000000003/full/pct:50/0/default.webp",
+        "type": "Image",
+        "format": "image/webp",
+        "height": 139,
+        "width": 1190
+      }
+    ],
+    "seeAlso": [
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections",
+        "type": "Dataset",
+        "format": "application/json",
+        "label": {
+          "none": [
+            "Northwestern University Libraries Digital Collections API"
+          ]
+        }
+      }
+    ],
+    "homepage": [
+      {
+        "id": "https://dc.library.northwestern.edu",
+        "type": "Text",
+        "format": "text/html",
+        "label": {
+          "none": [
+            "Northwestern University Libraries Digital Collections"
+          ]
+        }
+      }
+    ]
+  }
