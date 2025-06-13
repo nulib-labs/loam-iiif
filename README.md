@@ -5,7 +5,8 @@ A command-line tool for traversing IIIF collections and extracting manifest URLs
 ## Features
 
 - **Recursively Traverses IIIF Collections:** Finds all manifest URLs within a collection, including those in nested collections
-- **Supports Multiple IIIF Presentation API Versions:** Compatible with both IIIF Presentation API 2.0 and 3.0
+- **Supports Multiple IIIF Presentation API Versions:** Compatible with both IIIF Presentation API 2.0 and 3.0, including full support for paginated collections in both IIIF 2.1.1 and 3.0 formats
+- **Automatic Pagination Handling:** Seamlessly processes paginated IIIF collections using both `first`/`next` links (2.1.1) and "Next page" items (3.0)
 - **Multiple Output Formats:** Choose between `json`, `jsonl` (JSON Lines), and formatted tables
 - **Image URL Extraction:** Get IIIF image URLs from manifests with customizable dimensions
 - **Download Full Manifest JSONs:** Save the complete JSON content of each manifest, named by their IDs
@@ -186,9 +187,200 @@ Disable caching completely:
 loamiiif collect "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --no-cache
 ```
 
+## IIIF Pagination Support
+
+loam-iiif provides comprehensive support for paginated IIIF collections across multiple API versions. Many large institutions use pagination to break down extensive collections into manageable chunks.
+
+### Supported Pagination Patterns
+
+loam-iiif automatically handles multiple pagination patterns:
+
+#### IIIF Presentation API 2.1.1 Pagination
+Uses `first` and `next` properties to link between pages:
+```json
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://example.org/collection/main",
+  "@type": "sc:Collection",
+  "label": "Large Collection",
+  "first": {
+    "@id": "https://example.org/collection/main/page/1",
+    "@type": "sc:Collection"
+  }
+}
+```
+
+#### IIIF Presentation API 3.0 Pagination  
+Uses collection items with "Next page" labels and pagination URLs:
+```json
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "id": "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif",
+  "type": "Collection",
+  "items": [
+    {
+      "id": "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif&page=2",
+      "type": "Collection",
+      "label": {
+        "none": ["Next page"]
+      }
+    }
+  ]
+}
+```
+
+### How Pagination Works
+
+When loam-iiif encounters a paginated collection, it:
+
+1. **Automatically detects** pagination patterns in both IIIF 2.1.1 and 3.0 formats
+2. **Follows pagination links** by traversing `first`/`next` properties or "Next page" items
+3. **Collects manifests and collections** from all pages seamlessly
+4. **Respects limits** set by `--max-manifests` or `max_manifests` parameter
+5. **Handles errors gracefully** by stopping pagination on fetch failures
+
+### Examples of Paginated Collections
+
+```bash
+# Process IIIF 2.1.1 paginated collection (Bavarian State Library)
+loamiiif collect "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top" --max-manifests 100
+
+# Process IIIF 3.0 paginated collection (Northwestern University)
+loamiiif collect "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif" --max-manifests 50
+
+# Pagination is handled automatically - no special flags needed
+```
+
+Common institutions using paginated collections:
+- **Northwestern University** (`api.dc.library.northwestern.edu`) - IIIF 3.0 page-based pagination
+- **Bavarian State Library** (`digitale-sammlungen.de`) - IIIF 2.1.1 first/next pagination  
+- **Internet Archive** - Extensive digital library collections
+- **HathiTrust** - Academic and research library materials
+
+### Non-Paginated vs Paginated Collections
+
+**Non-paginated collections** contain all manifests and sub-collections directly in the main JSON response.
+
+**Paginated collections** split content across multiple pages using different patterns depending on the IIIF version:
+
+```json
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://example.org/collection/main",
+  "@type": "sc:Collection",
+  "label": "Large Collection",
+  "first": {
+    "@id": "https://example.org/collection/main/page/1",
+    "@type": "sc:Collection"
+  }
+}
+```
+
+loam-iiif seamlessly handles both types without requiring different commands or options.
+
 ## Python API Usage
 
 In addition to the command-line interface, loam-iiif can be used directly in Python code.
+
+### Handling Paginated Collections
+
+loam-iiif automatically detects and processes paginated collections in both IIIF 2.1.1 and 3.0 formats. Whether a collection uses `first`/`next` links (2.1.1) or "Next page" items (3.0), the library will traverse all pages to collect manifests and nested collections.
+
+```python
+from loam_iiif.iiif import IIIFClient
+
+# Initialize client
+client = IIIFClient()
+
+# Process IIIF 2.1.1 paginated collection (first/next links)
+manifests, collections = client.get_manifests_and_collections_ids(
+    "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top",
+    max_manifests=50  # Optional limit to control processing
+)
+
+# Process IIIF 3.0 paginated collection (page items)
+manifests, collections = client.get_manifests_and_collections_ids(
+    "https://api.dc.library.northwestern.edu/api/v2/collections?as=iiif",
+    max_manifests=50  # Optional limit to control processing
+)
+
+print(f"Found {len(manifests)} manifests across all pages")
+print(f"Found {len(collections)} collections")
+```
+
+### Processing Multiple Collections with Chunked Output
+
+Here's a comprehensive example showing how to process multiple IIIF collections and save chunked output:
+
+```python
+from loam_iiif import IIIFClient
+import json
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Collection configurations
+collections = [
+    {
+        "url": "https://digital.library.villanova.edu/Collection/vudl:7028/IIIF",
+        "output_file": "loam_villanova_collection_chunks.json"
+    },
+    {
+        "url": "https://api.dc.library.northwestern.edu/api/v2/collections/ecacd539-fe38-40ec-bbc0-590acee3d4f2?as=iiif",
+        "output_file": "loam_northwestern_collection_chunks.json"
+    },
+    {
+        "url": "https://iiif.durham.ac.uk/manifests/trifle/collection/32150/t2c7s75dc36q",
+        "output_file": "loam_durham_manifest_chunks.json"
+    },
+    {
+        "url": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top",
+        "output_file": "loam_digitale_sammlungen_manifest_chunks.json"
+    }
+]
+
+# Initialize client
+client = IIIFClient()
+
+# Process each collection
+for i, collection in enumerate(collections):
+    print(f"\n{'='*60}")
+    print(f"Processing collection {i+1}/{len(collections)}: {collection['url']}")
+    print(f"{'='*60}")
+    
+    logging.info(f"Processing collection: {collection['url']}")
+    
+    try:
+        # Create and save manifest chunks (pagination handled automatically)
+        chunks = client.create_and_save_manifest_chunks(
+            collection["url"], 
+            collection["output_file"], 
+            max_manifests=10  # Limit for example purposes
+        )
+        
+        if chunks:
+            logging.info(f"Manifest chunks created and saved to {collection['output_file']}.")
+            print(f"\nSample chunk from {collection['output_file']}:")
+            print(json.dumps(chunks[0], indent=2))
+        else:
+            logging.error(f"Failed to create manifest chunks for {collection['url']}.")
+            print(f"No chunks were created for {collection['url']}.")
+            
+    except Exception as e:
+        logging.error(f"Error processing {collection['url']}: {e}")
+        print(f"Error processing {collection['url']}: {e}")
+
+print("\nProcessing complete!")
+```
+
+This example demonstrates:
+- Processing multiple IIIF collections including paginated ones
+- Automatic handling of IIIF 2.1.1 pagination (like digitale-sammlungen.de)
+- Creating and saving manifest chunks to JSON files
+- Displaying sample chunk output
+- Error handling and progress logging
+- Setting limits on manifest processing
 
 ### Basic Usage
 

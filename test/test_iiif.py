@@ -549,7 +549,7 @@ def test_duplicate_collections_handling():
         
         # Verify that duplicate collection was detected
         duplicate_collection_url = "https://api.dc.library.northwestern.edu/api/v2/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4?as=iiif"
-        assert any(f"Already processed collection: {duplicate_collection_url}" in msg for msg in logged_messages), \
+        assert any(f"Collection already in queue: {duplicate_collection_url}" in msg for msg in logged_messages), \
             "Should log when encountering duplicate collection"
         
         # Verify the collection was only processed once
@@ -646,7 +646,8 @@ def test_collection_processing_error_handling():
                 ]
             }
         elif url == "http://example.org/bad-collection":
-            return {"items": [None]}  # This will cause an error when processing
+            # Return something that will cause an error during items processing
+            return {"items": [{"id": "http://example.org/bad-item", "type": "Manifest"}]}  # This will be handled by our mock
         elif url == "http://example.org/good-collection":
             return {
                 "items": [
@@ -659,6 +660,16 @@ def test_collection_processing_error_handling():
         return {}
 
     client.fetch_json = mock_fetch_json
+
+    # Mock _normalize_item_type to raise an exception for the bad collection
+    original_normalize = client._normalize_item_type
+    
+    def mock_normalize_item_type(item):
+        if isinstance(item, dict) and item.get("id") == "http://example.org/bad-item":
+            raise AttributeError("'NoneType' object has no attribute 'get'")
+        return original_normalize(item)
+    
+    client._normalize_item_type = mock_normalize_item_type
 
     # Capture logged errors
     with patch('logging.Logger.error') as mock_error:
@@ -1113,3 +1124,839 @@ def test_version_specific_max_size():
     v2_exact = client.get_manifest_images("http://example.org/v2-manifest", width=100, height=100, exact=True)
     assert v3_exact[0] == "https://example.org/iiif/v3-image/full/100,100/0/default.jpg", "V3 exact sized image should not use !"
     assert v2_exact[0] == "https://example.org/iiif/v2-image/full/100,100/0/default.jpg", "V2 exact sized image should not use !"
+
+def test_parent_collection_label_extraction_v2():
+    """Test extracting parent collection labels from IIIF v2 manifests using 'within' field"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock manifest with 'within' field pointing to a collection
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://digital.library.villanova.edu/Item/vudl:10950/Manifest",
+        "@type": "sc:Manifest",
+        "label": "Test Manifest",
+        "within": "https://digital.library.villanova.edu/Collection/vudl:680115/IIIF"
+    }
+    
+    # Mock collection data that would be fetched
+    collection_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://digital.library.villanova.edu/Collection/vudl:680115/IIIF",
+        "@type": "sc:Collection",
+        "label": "Naturforschenden Vereines in Brünn"
+    }
+    
+    def mock_fetch_json(url):
+        if url == "https://digital.library.villanova.edu/Item/vudl:10950/Manifest":
+            return manifest_data
+        elif url == "https://digital.library.villanova.edu/Collection/vudl:680115/IIIF":
+            return collection_data
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+
+    # Create chunks and verify parent collection label is extracted
+    chunks = client.create_manifest_chunks([
+        "https://digital.library.villanova.edu/Item/vudl:10950/Manifest"
+    ])
+    
+    assert len(chunks) == 1, "Should create one chunk"
+    chunk = chunks[0]
+    
+    # Verify parent collection information
+    assert len(chunk["metadata"]["parent_collections"]) == 1, "Should have one parent collection"
+    parent_collection = chunk["metadata"]["parent_collections"][0]
+    
+    assert parent_collection["id"] == "https://digital.library.villanova.edu/Collection/vudl:680115/IIIF"
+    assert parent_collection["label"] == "Naturforschenden Vereines in Brünn", "Should extract correct collection label"
+    
+    # Verify text includes proper parent collection info
+    assert "Part Of: Naturforschenden Vereines in Brünn (https://digital.library.villanova.edu/Collection/vudl:680115/IIIF)" in chunk["text"]
+
+def test_parent_collection_label_extraction_v3():
+    """Test extracting parent collection labels from IIIF v3 manifests using 'partOf' field"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock IIIF v3 manifest with partOf field containing label
+    manifest_data = {
+        "@context": ["http://iiif.io/api/presentation/3/context.json"],
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/test-manifest?as=iiif",
+        "type": "Manifest",
+        "label": {"none": ["Test Manifest"]},
+        "partOf": [
+            {
+                "id": "https://api.dc.library.northwestern.edu/api/v2/collections/test-collection?as=iiif",
+                "type": "Collection",
+                "label": {"none": ["Africa Embracing Obama"]}
+            }
+        ]
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+
+    # Create chunks and verify parent collection label is extracted
+    chunks = client.create_manifest_chunks([
+        "https://api.dc.library.northwestern.edu/api/v2/works/test-manifest?as=iiif"
+    ])
+    
+    assert len(chunks) == 1, "Should create one chunk"
+    chunk = chunks[0]
+    
+    # Verify parent collection information
+    assert len(chunk["metadata"]["parent_collections"]) == 1, "Should have one parent collection"
+    parent_collection = chunk["metadata"]["parent_collections"][0]
+    
+    assert parent_collection["id"] == "https://api.dc.library.northwestern.edu/api/v2/collections/test-collection?as=iiif"
+    assert parent_collection["label"] == "Africa Embracing Obama", "Should extract correct collection label"
+    
+    # Verify text includes proper parent collection info
+    assert "Part Of: Africa Embracing Obama (https://api.dc.library.northwestern.edu/api/v2/collections/test-collection?as=iiif)" in chunk["text"]
+
+def test_parent_collection_fetch_failure():
+    """Test handling when parent collection fetch fails"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock manifest with 'within' field
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://example.org/manifest",
+        "@type": "sc:Manifest",
+        "label": "Test Manifest",
+        "within": "https://example.org/collection"
+    }
+    
+    def mock_fetch_json(url):
+        if url == "https://example.org/manifest":
+            return manifest_data
+        elif url == "https://example.org/collection":
+            # Simulate fetch failure
+            raise requests.RequestException("Connection failed")
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+
+    # Capture logged warnings
+    with patch('logging.Logger.warning') as mock_warning:
+        chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+        
+        assert len(chunks) == 1, "Should still create chunk despite fetch failure"
+        chunk = chunks[0]
+        
+        # Should fall back to "Label Unknown"
+        parent_collection = chunk["metadata"]["parent_collections"][0]
+        assert parent_collection["label"] == "Parent Collection (Label Unknown)"
+        
+        # Should log warning about fetch failure
+        mock_warning.assert_called_with(
+            "Failed to fetch parent collection data from https://example.org/collection: Connection failed"
+        )
+
+def test_parent_collection_within_list():
+    """Test handling 'within' field as a list of collection URLs"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock manifest with 'within' as list
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://example.org/manifest",
+        "@type": "sc:Manifest",
+        "label": "Test Manifest",
+        "within": [
+            "https://example.org/collection1",
+            "https://example.org/collection2"
+        ]
+    }
+    
+    # Mock collection data
+    collection1_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://example.org/collection1",
+        "@type": "sc:Collection",
+        "label": "First Collection"
+    }
+    
+    collection2_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://example.org/collection2",
+        "@type": "sc:Collection",
+        "label": "Second Collection"
+    }
+    
+    def mock_fetch_json(url):
+        if url == "https://example.org/manifest":
+            return manifest_data
+        elif url == "https://example.org/collection1":
+            return collection1_data
+        elif url == "https://example.org/collection2":
+            return collection2_data
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+
+    chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+    
+    assert len(chunks) == 1, "Should create one chunk"
+    chunk = chunks[0]
+    
+    # Should have both parent collections
+    assert len(chunk["metadata"]["parent_collections"]) == 2, "Should have two parent collections"
+    
+    labels = [pc["label"] for pc in chunk["metadata"]["parent_collections"]]
+    assert "First Collection" in labels
+    assert "Second Collection" in labels
+
+def test_parent_collection_within_object():
+    """Test handling 'within' field as an object with embedded collection info"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock manifest with 'within' as object
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://example.org/manifest",
+        "@type": "sc:Manifest",
+        "label": "Test Manifest",
+        "within": {
+            "@id": "https://example.org/collection",
+            "@type": "sc:Collection",
+            "label": "Embedded Collection Label"
+        }
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+
+    chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+    
+    assert len(chunks) == 1, "Should create one chunk"
+    chunk = chunks[0]
+    
+    # Should extract label from embedded object without additional fetch
+    assert len(chunk["metadata"]["parent_collections"]) == 1, "Should have one parent collection"
+    parent_collection = chunk["metadata"]["parent_collections"][0]
+    
+    assert parent_collection["id"] == "https://example.org/collection"
+    assert parent_collection["label"] == "Embedded Collection Label"
+
+def test_parent_collection_complex_label_structures():
+    """Test handling complex IIIF label structures in parent collections"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock manifest with 'within' field
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://example.org/manifest",
+        "@type": "sc:Manifest",
+        "label": "Test Manifest",
+        "within": "https://example.org/collection"
+    }
+    
+    # Mock collection with complex IIIF v3 style label structure
+    collection_data = {
+        "@context": ["http://iiif.io/api/presentation/3/context.json"],
+        "id": "https://example.org/collection",
+        "type": "Collection",
+        "label": {
+            "en": ["English Label"],
+            "none": ["Fallback Label"]
+        }
+    }
+    
+    def mock_fetch_json(url):
+        if url == "https://example.org/manifest":
+            return manifest_data
+        elif url == "https://example.org/collection":
+            return collection_data
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+
+    chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+    
+    assert len(chunks) == 1, "Should create one chunk"
+    chunk = chunks[0]
+    
+    parent_collection = chunk["metadata"]["parent_collections"][0]
+    # Should prefer English label over fallback
+    assert parent_collection["label"] == "English Label"
+
+def test_no_parent_collection():
+    """Test handling manifests with no parent collection information"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock manifest without parent collection fields
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://example.org/manifest",
+        "@type": "sc:Manifest",
+        "label": "Test Manifest"
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+
+    chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+    
+    assert len(chunks) == 1, "Should create one chunk"
+    chunk = chunks[0]
+    
+    # Should have empty parent collections list
+    assert chunk["metadata"]["parent_collections"] == []
+    
+    # Text should not include "Part Of" section
+    assert "Part Of:" not in chunk["text"]
+
+def test_homepage_extraction_from_related_field():
+    """Test homepage extraction from IIIF v2 'related' field"""
+    client = IIIFClient(no_cache=True)
+    
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://digital.library.villanova.edu/Item/test/Manifest",
+        "label": "Test Document",
+        "related": {
+            "@id": "https://digital.library.villanova.edu/Item/test",
+            "format": "text/html"
+        }
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+    
+    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    
+    assert len(chunks) == 1
+    metadata = chunks[0]["metadata"]
+    
+    # Should extract homepage from related field
+    assert metadata["homepage"] == "https://digital.library.villanova.edu/Item/test"
+
+
+def test_homepage_extraction_from_metadata_about_field():
+    """Test homepage extraction from 'About' metadata field with Permanent Link"""
+    client = IIIFClient(no_cache=True)
+    
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://digital.library.villanova.edu/Item/test/Manifest",
+        "label": "Test Document",
+        "metadata": [
+            {
+                "label": "About",
+                "value": "<span><a href=\"https://digital.library.villanova.edu/Record/test\">More Details</a><br /><a href=\"https://digital.library.villanova.edu/Item/test\">Permanent Link</a></span>"
+            }
+        ]
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+    
+    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    
+    assert len(chunks) == 1
+    metadata = chunks[0]["metadata"]
+    
+    # Should extract homepage from "Permanent Link" in About metadata
+    assert metadata["homepage"] == "https://digital.library.villanova.edu/Item/test"
+
+
+def test_homepage_extraction_priority():
+    """Test that homepage extraction from About metadata takes priority over related field"""
+    client = IIIFClient(no_cache=True)
+    
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://digital.library.villanova.edu/Item/test/Manifest",
+        "label": "Test Document",
+        "related": {
+            "@id": "https://digital.library.villanova.edu/Item/test-related",
+            "format": "text/html"
+        },
+        "metadata": [
+            {
+                "label": "About",
+                "value": "<span><a href=\"https://digital.library.villanova.edu/Item/test-permanent\">Permanent Link</a></span>"
+            }
+        ]
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+    
+    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    
+    assert len(chunks) == 1
+    metadata = chunks[0]["metadata"]
+    
+    # Should prefer Permanent Link from metadata over related field
+    assert metadata["homepage"] == "https://digital.library.villanova.edu/Item/test-permanent"
+
+
+def test_rights_extraction_from_attribution():
+    """Test rights URL extraction from attribution HTML content"""
+    client = IIIFClient(no_cache=True)
+    
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://digital.library.villanova.edu/Item/test/Manifest",
+        "label": "Test Document",
+        "requiredStatement": {
+            "label": "ATTRIBUTION",
+            "value": "<span>Digital Library@Villanova University<br /><br /><b>Disclaimers</b>: <br /><a href=\"https://digital.library.villanova.edu/copyright.html#liability\">Disclaimer of Liability</a><br /><a href=\"https://digital.library.villanova.edu/copyright.html#endorsement\">Disclaimer of Endorsement</a><br /><br /><b>License</b>: <br /><a href=\"https://digital.library.villanova.edu/rights.html\">Rights Information</a></span>"
+        }
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+    
+    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    
+    assert len(chunks) == 1
+    metadata = chunks[0]["metadata"]
+    
+    # Should extract rights URL from attribution HTML
+    assert metadata["rights"] == "https://digital.library.villanova.edu/rights.html"
+
+
+def test_enhanced_metadata_extraction_combined():
+    """Test the complete enhanced metadata extraction with both homepage and rights"""
+    client = IIIFClient(no_cache=True)
+    
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://digital.library.villanova.edu/Item/test/Manifest",
+        "label": "Test Document",
+        "related": {
+            "@id": "https://digital.library.villanova.edu/Item/test",
+            "format": "text/html"
+        },
+        "metadata": [
+            {
+                "label": "About",
+                "value": "<span><a href=\"https://digital.library.villanova.edu/Record/test\">More Details</a><br /><a href=\"https://digital.library.villanova.edu/Item/test-permanent\">Permanent Link</a></span>"
+            }
+        ],
+        "requiredStatement": {
+            "label": "ATTRIBUTION",
+            "value": "<span>Digital Library@Villanova University<br /><br /><b>License</b>: <br /><a href=\"https://digital.library.villanova.edu/rights.html\">Rights Information</a></span>"
+        }
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+    
+    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    
+    assert len(chunks) == 1
+    metadata = chunks[0]["metadata"]
+    
+    # Should extract homepage from "Permanent Link" (priority over related)
+    assert metadata["homepage"] == "https://digital.library.villanova.edu/Item/test-permanent"
+    
+    # Should extract rights URL from attribution
+    assert metadata["rights"] == "https://digital.library.villanova.edu/rights.html"
+    
+    # Should have attribution details
+    assert metadata["attribution"]["label"] == "ATTRIBUTION"
+    assert "Digital Library@Villanova University" in metadata["attribution"]["value"]
+
+
+def test_rights_extraction_fallback_when_no_rights_field():
+    """Test that rights extraction from attribution only happens when no explicit rights field exists"""
+    client = IIIFClient(no_cache=True)
+    
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/3/context.json",
+        "id": "https://example.org/manifest",
+        "label": {"en": ["Test Document"]},
+        "rights": "http://creativecommons.org/licenses/by/4.0/",
+        "requiredStatement": {
+            "label": {"en": ["Attribution"]},
+            "value": {"en": ["Some institution<br /><a href=\"https://example.org/rights.html\">Rights Information</a>"]}
+        }
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+    
+    chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+    
+    assert len(chunks) == 1
+    metadata = chunks[0]["metadata"]
+    
+    # Should use explicit rights field, not extract from attribution
+    assert metadata["rights"] == "http://creativecommons.org/licenses/by/4.0/"
+
+
+def test_homepage_extraction_with_related_list():
+    """Test homepage extraction when related field is a list"""
+    client = IIIFClient(no_cache=True)
+    
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://digital.library.villanova.edu/Item/test/Manifest",
+        "label": "Test Document",
+        "related": [
+            {
+                "@id": "https://digital.library.villanova.edu/Item/test-first",
+                "format": "text/html"
+            },
+            {
+                "@id": "https://digital.library.villanova.edu/Item/test-second",
+                "format": "application/pdf"
+            }
+        ]
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+    
+    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    
+    assert len(chunks) == 1
+    metadata = chunks[0]["metadata"]
+    
+    # Should extract homepage from first item in related list
+    assert metadata["homepage"] == "https://digital.library.villanova.edu/Item/test-first"
+
+
+def test_no_homepage_extraction_when_no_sources():
+    """Test that homepage remains None when no extraction sources are available"""
+    client = IIIFClient(no_cache=True)
+    
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://digital.library.villanova.edu/Item/test/Manifest",
+        "label": "Test Document",
+        "metadata": [
+            {
+                "label": "Topic",
+                "value": "Natural history"
+            }
+        ]
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+    
+    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    
+    assert len(chunks) == 1
+    metadata = chunks[0]["metadata"]
+    
+    # Should remain None when no homepage sources are available
+    assert metadata["homepage"] is None
+
+
+def test_rights_extraction_with_different_html_patterns():
+    """Test rights extraction with various HTML patterns"""
+    client = IIIFClient(no_cache=True)
+    
+    test_cases = [
+        {
+            "html": '<a href="https://example.org/rights.html">Rights Info</a>',
+            "expected": "https://example.org/rights.html"
+        },
+        {
+            "html": 'Text before <a href="https://institution.edu/rights.html" target="_blank">Rights Information</a> text after',
+            "expected": "https://institution.edu/rights.html"
+        },
+        {
+            "html": '<span><a href="https://library.org/copyright-rights.html">Copyright Rights</a></span>',
+            "expected": "https://library.org/copyright-rights.html"
+        }
+    ]
+    
+    for i, test_case in enumerate(test_cases):
+        manifest_data = {
+            "@context": "http://iiif.io/api/presentation/2/context.json",
+            "@id": f"https://example.org/manifest-{i}",
+            "label": f"Test Document {i}",
+            "requiredStatement": {
+                "label": "ATTRIBUTION",
+                "value": test_case["html"]
+            }
+        }
+        
+        def mock_fetch_json(url):
+            return manifest_data
+            
+        client.fetch_json = mock_fetch_json
+        
+        chunks = client.create_manifest_chunks([f"https://example.org/manifest-{i}"])
+        
+        assert len(chunks) == 1
+        metadata = chunks[0]["metadata"]
+        
+        # Should extract the expected rights URL
+        assert metadata["rights"] == test_case["expected"], f"Failed for test case {i}: {test_case['html']}"
+
+def test_paginated_collection_v2_1_1():
+    """Test processing IIIF 2.1.1 paginated collections"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock top-level collection with pagination
+    top_collection_data = load_fixture('iiif_v2.1.1_pagination.json')
+    
+    # Mock first page with manifests
+    first_page_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=initial",
+        "@type": "sc:Collection",
+        "label": "First Page",
+        "manifests": [
+            {
+                "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/bsb12040605/manifest",
+                "@type": "sc:Manifest",
+                "label": "Manifest 1"
+            },
+            {
+                "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/bsb12040606/manifest", 
+                "@type": "sc:Manifest",
+                "label": "Manifest 2"
+            }
+        ],
+        "next": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=page2"
+    }
+    
+    # Mock second page with manifests (no next page)
+    second_page_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=page2",
+        "@type": "sc:Collection", 
+        "label": "Second Page",
+        "manifests": [
+            {
+                "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/bsb12040607/manifest",
+                "@type": "sc:Manifest",
+                "label": "Manifest 3"
+            }
+        ]
+    }
+    
+    def mock_fetch_json(url):
+        if url == "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top":
+            return top_collection_data
+        elif url == "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=initial":
+            return first_page_data
+        elif url == "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=page2":
+            return second_page_data
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+
+    # Get manifests and collections
+    manifests, collections = client.get_manifests_and_collections_ids(
+        "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top"
+    )
+
+    # Test expectations
+    assert len(manifests) == 3, "Should find 3 manifests across paginated pages"
+    assert len(collections) == 1, "Should find 1 collection (root collection)"
+
+    # Verify specific manifest URLs
+    expected_manifests = [
+        "https://api.digitale-sammlungen.de/iiif/presentation/v2/bsb12040605/manifest",
+        "https://api.digitale-sammlungen.de/iiif/presentation/v2/bsb12040606/manifest",
+        "https://api.digitale-sammlungen.de/iiif/presentation/v2/bsb12040607/manifest"
+    ]
+    for manifest in expected_manifests:
+        assert manifest in manifests, f"Should find manifest {manifest}"
+
+def test_paginated_collection_with_max_manifests():
+    """Test paginated collection respects max_manifests limit"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock top-level collection with pagination
+    top_collection_data = load_fixture('iiif_v2.1.1_pagination.json')
+    
+    # Mock first page with manifests
+    first_page_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=initial",
+        "@type": "sc:Collection",
+        "manifests": [
+            {
+                "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/bsb12040605/manifest",
+                "@type": "sc:Manifest",
+                "label": "Manifest 1"
+            },
+            {
+                "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/bsb12040606/manifest",
+                "@type": "sc:Manifest", 
+                "label": "Manifest 2"
+            }
+        ],
+        "next": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=page2"
+    }
+    
+    def mock_fetch_json(url):
+        if url == "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top":
+            return top_collection_data
+        elif url == "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=initial":
+            return first_page_data
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+
+    # Get manifests with limit of 1
+    manifests, collections = client.get_manifests_and_collections_ids(
+        "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top",
+        max_manifests=1
+    )
+
+    # Should stop at max_manifests limit
+    assert len(manifests) == 1, "Should only return 1 manifest when max_manifests=1"
+    assert manifests[0] == "https://api.digitale-sammlungen.de/iiif/presentation/v2/bsb12040605/manifest"
+
+def test_paginated_collection_with_collections():
+    """Test paginated collection that contains other collections"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock top-level collection with pagination
+    top_collection_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top",
+        "@type": "sc:Collection",
+        "label": "Top Level Collection",
+        "first": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=initial",
+        "total": 100
+    }
+    
+    # Mock first page with collections and manifests
+    first_page_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=initial",
+        "@type": "sc:Collection",
+        "collections": [
+            {
+                "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/subcoll1",
+                "@type": "sc:Collection",
+                "label": "Sub Collection 1"
+            }
+        ],
+        "manifests": [
+            {
+                "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/manifest1",
+                "@type": "sc:Manifest",
+                "label": "Manifest 1"
+            }
+        ]
+    }
+    
+    def mock_fetch_json(url):
+        if url == "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top":
+            return top_collection_data
+        elif url == "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=initial":
+            return first_page_data
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+
+    manifests, collections = client.get_manifests_and_collections_ids(
+        "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top"
+    )
+
+    # Should find both manifests and sub-collections
+    assert len(manifests) == 1, "Should find 1 manifest"
+    assert len(collections) == 2, "Should find root collection and sub-collection"
+    assert "https://api.digitale-sammlungen.de/iiif/presentation/v2/manifest1" in manifests
+    assert "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/subcoll1" in collections
+
+def test_paginated_collection_fetch_error():
+    """Test handling when a paginated collection page fetch fails"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock top-level collection with pagination
+    top_collection_data = load_fixture('iiif_v2.1.1_pagination.json')
+    
+    def mock_fetch_json(url):
+        if url == "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top":
+            return top_collection_data
+        elif url == "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top?cursor=initial":
+            raise requests.RequestException("Connection error")
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+
+    # Should handle page fetch error gracefully
+    manifests, collections = client.get_manifests_and_collections_ids(
+        "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top"
+    )
+
+    # Should still include root collection even if page fetch fails
+    assert len(manifests) == 0, "Should find no manifests due to page fetch error"
+    assert len(collections) == 1, "Should still find root collection"
+
+def test_paginated_collection_no_first_property():
+    """Test handling when paginated collection has no 'first' property"""
+    client = IIIFClient(no_cache=True)
+    
+    # Mock collection that looks paginated but has no 'first' property
+    collection_data = {
+        "@context": "http://iiif.io/api/presentation/2/context.json",
+        "@id": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top",
+        "@type": "sc:Collection",
+        "label": "Top Level Collection",
+        "total": 3074231
+        # No 'first' property
+    }
+    
+    def mock_fetch_json(url):
+        if url == "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top":
+            return collection_data
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+
+    # Should handle missing 'first' property gracefully
+    manifests, collections = client.get_manifests_and_collections_ids(
+        "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top"
+    )
+
+    # Should still include root collection
+    assert len(manifests) == 0, "Should find no manifests"
+    assert len(collections) == 1, "Should find root collection"
+
+def test_non_paginated_collection_with_items():
+    """Test that non-paginated collections with regular items still work"""
+    client = IIIFClient(no_cache=True)
+    collection_data = load_fixture('iiif_v3_collection_with_manifests.json')
+    
+    def mock_fetch_json(url):
+        if url == "https://api.dc.library.northwestern.edu/api/v2/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4?as=iiif":
+            return collection_data
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+
+    # Should process normally (not as paginated collection)
+    manifests, collections = client.get_manifests_and_collections_ids(
+        "https://api.dc.library.northwestern.edu/api/v2/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4?as=iiif"
+    )
+
+    # Should work as before
+    assert len(manifests) == 3, "Should find 3 manifests in non-paginated collection"
+    assert len(collections) == 1, "Should find 1 collection"

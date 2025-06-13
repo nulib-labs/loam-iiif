@@ -1,6 +1,6 @@
 [project]
 name = "loam-iiif"
-version = "0.1.4"
+version = "0.1.5"
 description = "A command-line tool for fetching IIIF Collections on the Web."
 readme = "README.md"
 authors = [{ name = "Brendan Quinn", email = "brendan-quinn@northwestern.edu" }]
@@ -33,4 +33,26 @@ dev = [
     "twine>=6.0.1",
     "pytest>=7.4.0",
     "pytest-cov>=6.0.0",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "test/*",
+    "*/test/*",
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+    "example.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
 ]
