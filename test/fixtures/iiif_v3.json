@@ -1,0 +1,477 @@
+{
+    "@context": "http://iiif.io/api/presentation/3/context.json",
+    "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif",
+    "type": "Manifest",
+    "label": {
+      "none": [
+        "Translation of a letter from Andereya Bisereko Duhaga, the King of Bunyoro, to Susan E. Hicks-Beach, 24 May, 1908"
+      ]
+    },
+    "metadata": [
+      {
+        "label": {
+          "none": [
+            "Contributor"
+          ]
+        },
+        "value": {
+          "none": [
+            "Duhaga II, King of Bunyoro, 1882?-1924 (Author)",
+            "Winterton, Humphrey (Collector)"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Cultural Context"
+          ]
+        },
+        "value": {
+          "none": [
+            "Content on this site is drawn from a broad range of historical sources including materials that may contain offensive images or language reflecting the nature of European colonialism in Africa. Such materials should be viewed in the context of the time and place in which they were created. The images and text in this site are presented as specific, original artifacts recording the attitudes, perspectives and beliefs of a different era. Northwestern University does not endorse the views expressed in this collection which may contain images and text offensive to some researchers."
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Date"
+          ]
+        },
+        "value": {
+          "none": [
+            "May 24, 1908"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Department"
+          ]
+        },
+        "value": {
+          "none": [
+            "Herskovits Library of African Studies"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Genre"
+          ]
+        },
+        "value": {
+          "none": [
+            "translations (documents)",
+            "letters (correspondence)"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Identifier"
+          ]
+        },
+        "value": {
+          "none": [
+            "14-1-5",
+            "037",
+            "14-1"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Last Modified"
+          ]
+        },
+        "value": {
+          "none": [
+            "2023-03-29T14:06:48.309409Z"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Language"
+          ]
+        },
+        "value": {
+          "none": [
+            "English"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Materials"
+          ]
+        },
+        "value": {
+          "none": [
+            "1 letter"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Related URL"
+          ]
+        },
+        "value": {
+          "none": [
+            "<span><a href=https://libguides.northwestern.edu/winterton>Research Guide</a></span>",
+            "<span><a href=https://findingaids.library.northwestern.edu/repositories/4/resources/1419>Finding Aid</a></span>"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Rights Statement"
+          ]
+        },
+        "value": {
+          "none": [
+            "No Copyright - United States"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Scope and Contents"
+          ]
+        },
+        "value": {
+          "none": [
+            "Letter written to Miss Hicks-Beach by Andereya Bisereko Duhaga, the King of Bunyoro, and the English translations of them. Written in Swahili and translated into English."
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Series"
+          ]
+        },
+        "value": {
+          "none": [
+            "Humphrey Winterton Collection of East African Photographs--Group 14. East Africa, 1907-1908--Series 1. Photographs and letters of Miss Susan E. Hicks-Beach, 1908-1911"
+          ]
+        }
+      },
+      {
+        "label": {
+          "none": [
+            "Subject"
+          ]
+        },
+        "value": {
+          "none": [
+            "Africa, East",
+            "Uganda",
+            "Eastern Africa",
+            "Hicks-Beach, Susan Evelyn, 1878-1965",
+            "Voyages and travels",
+            "Duhaga II, King of Bunyoro, 1882?-1924"
+          ]
+        }
+      }
+    ],
+    "requiredStatement": {
+      "label": {
+        "none": [
+          "Attribution"
+        ]
+      },
+      "value": {
+        "none": [
+          "Courtesy of Northwestern University Libraries",
+          "The images on this web site, from material in the collections of the Melville J. Herskovits Library of African Studies of Northwestern University Libraries, are provided for use by its students, faculty and staff, and by other researchers visiting this site, for research consultation and scholarly purposes only. Further distribution and/or any commercial use of the images from this site is not permitted."
+        ]
+      }
+    },
+    "rights": "http://rightsstatements.org/vocab/NoC-US/1.0/",
+    "thumbnail": [
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c/thumbnail",
+        "type": "Image",
+        "format": "image/jpeg",
+        "height": 300,
+        "width": 300
+      }
+    ],
+    "seeAlso": [
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c",
+        "type": "Dataset",
+        "format": "application/json",
+        "label": {
+          "none": [
+            "Northwestern University Libraries Digital Collections API"
+          ]
+        }
+      }
+    ],
+    "homepage": [
+      {
+        "id": "https://dc.library.northwestern.edu/items/981389dc-c407-4503-9f52-7b9ba6873a2c",
+        "type": "Text",
+        "format": "text/html",
+        "label": {
+          "none": [
+            "Homepage at Northwestern University Libraries Digital Collections"
+          ]
+        }
+      }
+    ],
+    "partOf": [
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/collections/6f58c85f-f1fc-43c1-be52-678867659ff6?as=iiif",
+        "type": "Collection",
+        "label": {
+          "none": [
+            "The Humphrey Winterton Collection of East African Photographs: 1860-1960"
+          ]
+        },
+        "summary": {
+          "none": [
+            "The collection depicts the breadth of African experience; documents African life; European life in Africa in all its manifestations; and the African landscape, in particular as it changed over time. Included are photographs showing the building of East Africa’s railways, the growth of its urban centers and the development of European colonial administration. There are outstanding examples of portraiture. The collection provides an unsurpassed resource for the study of the history of photography in East Africa. \n\nCultural Context: Content on this site is drawn from a broad range of historical sources including materials that may contain offensive images or language reflecting the nature of European colonialism in Africa. Such materials should be viewed in the context of the time and place in which they were created. The images and text in this site are presented as specific, original artifacts recording the attitudes, perspectives and beliefs of a different era. Northwestern University does not endorse the views expressed in this collection which may contain images and text offensive to some researchers."
+          ]
+        }
+      }
+    ],
+    "items": [
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/0",
+        "type": "Canvas",
+        "height": 4992,
+        "width": 4062,
+        "label": {
+          "none": [
+            "inu-wint-14-1-5A.tif"
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://iiif.dc.library.northwestern.edu/iiif/3/291faec8-cb1c-4bb8-9277-cc904ba4b6cd/full/!300,300/0/default.jpg",
+            "type": "Image",
+            "format": "image/jpeg",
+            "height": 300,
+            "width": 300,
+            "service": [
+              {
+                "@id": "https://iiif.dc.library.northwestern.edu/iiif/3/291faec8-cb1c-4bb8-9277-cc904ba4b6cd",
+                "@type": "ImageService2",
+                "profile": "http://iiif.io/api/image/2/level2.json"
+              }
+            ]
+          }
+        ],
+        "items": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/0/annotation-page",
+            "type": "AnnotationPage",
+            "items": [
+              {
+                "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/0/annotation/0",
+                "type": "Annotation",
+                "motivation": "painting",
+                "target": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/0",
+                "body": {
+                  "id": "https://iiif.dc.library.northwestern.edu/iiif/3/291faec8-cb1c-4bb8-9277-cc904ba4b6cd/full/600,/0/default.jpg",
+                  "type": "Image",
+                  "format": "image/tiff",
+                  "height": 4992,
+                  "width": 4062,
+                  "service": [
+                    {
+                      "@id": "https://iiif.dc.library.northwestern.edu/iiif/3/291faec8-cb1c-4bb8-9277-cc904ba4b6cd",
+                      "@type": "ImageService2",
+                      "profile": "http://iiif.io/api/image/2/level2.json"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "placeholderCanvas": {
+          "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/0/placeholder",
+          "type": "Canvas",
+          "width": 640,
+          "height": 786,
+          "items": [
+            {
+              "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/0/placeholder/annotation-page/0",
+              "type": "AnnotationPage",
+              "items": [
+                {
+                  "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/0/placeholder/annotation/0",
+                  "type": "Annotation",
+                  "motivation": "painting",
+                  "body": {
+                    "id": "https://iiif.dc.library.northwestern.edu/iiif/3/291faec8-cb1c-4bb8-9277-cc904ba4b6cd/full/!640,786/0/default.jpg",
+                    "type": "Image",
+                    "format": "image/tiff",
+                    "width": 640,
+                    "height": 786,
+                    "service": [
+                      {
+                        "@id": "https://iiif.dc.library.northwestern.edu/iiif/3/291faec8-cb1c-4bb8-9277-cc904ba4b6cd",
+                        "@type": "ImageService2",
+                        "profile": "http://iiif.io/api/image/2/level2.json"
+                      }
+                    ]
+                  },
+                  "target": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/0/placeholder"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/1",
+        "type": "Canvas",
+        "height": 5010,
+        "width": 4086,
+        "label": {
+          "none": [
+            "inu-wint-14-1-5B.tif"
+          ]
+        },
+        "thumbnail": [
+          {
+            "id": "https://iiif.dc.library.northwestern.edu/iiif/3/2fe5fe88-1e71-4b5c-8230-0e0a1902a531/full/!300,300/0/default.jpg",
+            "type": "Image",
+            "format": "image/jpeg",
+            "height": 300,
+            "width": 300,
+            "service": [
+              {
+                "@id": "https://iiif.dc.library.northwestern.edu/iiif/3/2fe5fe88-1e71-4b5c-8230-0e0a1902a531",
+                "@type": "ImageService2",
+                "profile": "http://iiif.io/api/image/2/level2.json"
+              }
+            ]
+          }
+        ],
+        "items": [
+          {
+            "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/1/annotation-page",
+            "type": "AnnotationPage",
+            "items": [
+              {
+                "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/1/annotation/0",
+                "type": "Annotation",
+                "motivation": "painting",
+                "target": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/1",
+                "body": {
+                  "id": "https://iiif.dc.library.northwestern.edu/iiif/3/2fe5fe88-1e71-4b5c-8230-0e0a1902a531/full/600,/0/default.jpg",
+                  "type": "Image",
+                  "format": "image/tiff",
+                  "height": 5010,
+                  "width": 4086,
+                  "service": [
+                    {
+                      "@id": "https://iiif.dc.library.northwestern.edu/iiif/3/2fe5fe88-1e71-4b5c-8230-0e0a1902a531",
+                      "@type": "ImageService2",
+                      "profile": "http://iiif.io/api/image/2/level2.json"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "placeholderCanvas": {
+          "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/1/placeholder",
+          "type": "Canvas",
+          "width": 640,
+          "height": 784,
+          "items": [
+            {
+              "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/1/placeholder/annotation-page/0",
+              "type": "AnnotationPage",
+              "items": [
+                {
+                  "id": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/1/placeholder/annotation/0",
+                  "type": "Annotation",
+                  "motivation": "painting",
+                  "body": {
+                    "id": "https://iiif.dc.library.northwestern.edu/iiif/3/2fe5fe88-1e71-4b5c-8230-0e0a1902a531/full/!640,784/0/default.jpg",
+                    "type": "Image",
+                    "format": "image/tiff",
+                    "width": 640,
+                    "height": 784,
+                    "service": [
+                      {
+                        "@id": "https://iiif.dc.library.northwestern.edu/iiif/3/2fe5fe88-1e71-4b5c-8230-0e0a1902a531",
+                        "@type": "ImageService2",
+                        "profile": "http://iiif.io/api/image/2/level2.json"
+                      }
+                    ]
+                  },
+                  "target": "https://api.dc.library.northwestern.edu/api/v2/works/981389dc-c407-4503-9f52-7b9ba6873a2c?as=iiif/canvas/access/1/placeholder"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "provider": [
+      {
+        "id": "https://www.library.northwestern.edu/",
+        "type": "Agent",
+        "label": {
+          "none": [
+            "Northwestern University Libraries"
+          ]
+        },
+        "homepage": [
+          {
+            "id": "https://dc.library.northwestern.edu/",
+            "type": "Text",
+            "label": {
+              "none": [
+                "Northwestern University Libraries Digital Collections Homepage"
+              ]
+            },
+            "format": "text/html",
+            "language": [
+              "en"
+            ]
+          }
+        ],
+        "logo": [
+          {
+            "id": "https://iiif.dc.library.northwestern.edu/iiif/2/00000000-0000-0000-0000-000000000003/full/pct:50/0/default.webp",
+            "type": "Image",
+            "format": "image/webp",
+            "height": 139,
+            "width": 1190
+          }
+        ]
+      }
+    ],
+    "logo": [
+      {
+        "id": "https://iiif.dc.library.northwestern.edu/iiif/2/00000000-0000-0000-0000-000000000003/full/pct:50/0/default.webp",
+        "type": "Image",
+        "format": "image/webp",
+        "height": 139,
+        "width": 1190
+      }
+    ]
+  }

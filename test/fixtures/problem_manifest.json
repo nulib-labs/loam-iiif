@@ -1,0 +1,13 @@
+{
+    "@context": "http://iiif.io/api/presentation/2/context.json",
+    "@id": "https://view.nls.uk/collections/1009/8921/100989212.json",
+    "@type": "sc:Collection",
+    "label": "Marjory Fleming",
+    "manifests": [
+      {"@id": "https://view.nls.uk/manifest/1009/8921/100989213/manifest.json", "@type": "sc:Manifest", "label": "Miniature portrait of Marjory Fleming"},
+      {"@id": "https://view.nls.uk/manifest/1009/8932/100989323/manifest.json", "@type": "sc:Manifest", "label": "Volume 1"},
+      {"@id": "https://view.nls.uk/manifest/1009/8932/100989324/manifest.json", "@type": "sc:Manifest", "label": "Volume 2"},
+      {"@id": "https://view.nls.uk/manifest/1009/8932/100989325/manifest.json", "@type": "sc:Manifest", "label": "Volume 3"},
+      {"@id": "https://view.nls.uk/manifest/1009/8921/100989217/manifest.json", "@type": "sc:Manifest", "label": "Poems of, and letters of and relating to, Marjory Fleming"},
+    ]
+}

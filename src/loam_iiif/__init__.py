@@ -1,0 +1,1 @@
+from loam_iiif.iiif import IIIFClient
