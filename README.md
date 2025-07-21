@@ -189,7 +189,7 @@ loamiiif collect "https://api.dc.library.northwestern.edu/api/v2/collections?as=
 
 ## IIIF Pagination Support
 
-loam-iiif provides comprehensive support for paginated IIIF collections across multiple API versions. Many large institutions use pagination to break down extensive collections into manageable chunks.
+loam-iiif provides comprehensive support for paginated IIIF collections across multiple API versions. Many large institutions use pagination to break down extensive collections into manageable segments.
 
 ### Supported Pagination Patterns
 
@@ -308,9 +308,9 @@ print(f"Found {len(manifests)} manifests across all pages")
 print(f"Found {len(collections)} collections")
 ```
 
-### Processing Multiple Collections with Chunked Output
+### Processing Multiple Collections with Parsed Output
 
-Here's a comprehensive example showing how to process multiple IIIF collections and save chunked output:
+Here's a comprehensive example showing how to process multiple IIIF collections and save parsed output:
 
 ```python
 from loam_iiif import IIIFClient
@@ -324,19 +324,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 collections = [
     {
         "url": "https://digital.library.villanova.edu/Collection/vudl:7028/IIIF",
-        "output_file": "loam_villanova_collection_chunks.json"
+        "output_file": "loam_villanova_collection_data.json"
     },
     {
         "url": "https://api.dc.library.northwestern.edu/api/v2/collections/ecacd539-fe38-40ec-bbc0-590acee3d4f2?as=iiif",
-        "output_file": "loam_northwestern_collection_chunks.json"
+        "output_file": "loam_northwestern_collection_data.json"
     },
     {
         "url": "https://iiif.durham.ac.uk/manifests/trifle/collection/32150/t2c7s75dc36q",
-        "output_file": "loam_durham_manifest_chunks.json"
+        "output_file": "loam_durham_manifest_data.json"
     },
     {
         "url": "https://api.digitale-sammlungen.de/iiif/presentation/v2/collection/top",
-        "output_file": "loam_digitale_sammlungen_manifest_chunks.json"
+        "output_file": "loam_digitale_sammlungen_manifest_data.json"
     }
 ]
 
@@ -352,20 +352,20 @@ for i, collection in enumerate(collections):
     logging.info(f"Processing collection: {collection['url']}")
     
     try:
-        # Create and save manifest chunks (pagination handled automatically)
-        chunks = client.create_and_save_manifest_chunks(
+        # Parse and save manifest data (pagination handled automatically)
+        parsed_data = client.create_and_save_manifest_data(
             collection["url"], 
             collection["output_file"], 
             max_manifests=10  # Limit for example purposes
         )
         
-        if chunks:
-            logging.info(f"Manifest chunks created and saved to {collection['output_file']}.")
-            print(f"\nSample chunk from {collection['output_file']}:")
-            print(json.dumps(chunks[0], indent=2))
+        if parsed_data:
+            logging.info(f"Manifest data created and saved to {collection['output_file']}.")
+            print(f"\nSample data from {collection['output_file']}:")
+            print(json.dumps(parsed_data[0], indent=2))
         else:
-            logging.error(f"Failed to create manifest chunks for {collection['url']}.")
-            print(f"No chunks were created for {collection['url']}.")
+            logging.error(f"Failed to create manifest data for {collection['url']}.")
+            print(f"No data was created for {collection['url']}.")
             
     except Exception as e:
         logging.error(f"Error processing {collection['url']}: {e}")
@@ -377,8 +377,8 @@ print("\nProcessing complete!")
 This example demonstrates:
 - Processing multiple IIIF collections including paginated ones
 - Automatic handling of IIIF 2.1.1 pagination (like digitale-sammlungen.de)
-- Creating and saving manifest chunks to JSON files
-- Displaying sample chunk output
+- Creating and saving manifest data to JSON files
+- Displaying sample data output
 - Error handling and progress logging
 - Setting limits on manifest processing
 
@@ -412,6 +412,75 @@ The above code returns a tuple of two lists: manifest URLs and collection URLs t
     'https://api.dc.library.northwestern.edu/api/v2/collections/ba35820a-525a-4cfa-8f23-4891c9f798c4?as=iiif'
 ]
 ```
+
+### Parsing Individual Manifests
+
+The library provides a convenient method for parsing individual IIIF manifests into structured data suitable for analysis or further processing.
+
+#### Parse Individual Manifest
+
+```python
+from loam_iiif.iiif import IIIFClient
+
+client = IIIFClient()
+
+# Parse a single manifest into structured data
+manifest_data = client.parse_manifest(
+    "https://api.dc.library.northwestern.edu/api/v2/works/1b607dac-481a-43e8-a11f-3818a0b10e16?as=iiif",
+    strip_tags=True  # Remove HTML tags from text fields
+)
+
+if manifest_data:
+    print(f"Title: {manifest_data['metadata']['title']}")
+    print(f"Type: {manifest_data['metadata']['type']}")
+    print(f"Homepage: {manifest_data['metadata']['homepage']}")
+    print(f"Rights: {manifest_data['metadata']['rights']}")
+    
+    # Full structured text content
+    print(f"\nFull Text:\n{manifest_data['text']}")
+    
+    # Parent collections (if any)
+    if manifest_data['metadata']['parent_collections']:
+        print(f"\nParent Collections:")
+        for collection in manifest_data['metadata']['parent_collections']:
+            print(f"  - {collection['label']} ({collection['id']})")
+else:
+    print("Failed to parse manifest")
+```
+
+#### Parsed Data Structure
+
+The `parse_manifest()` method returns data in this format:
+
+```python
+{
+    "text": "Manifest ID: https://example.org/manifest\nTitle: Document Title\nSummary: Document description...",
+    "metadata": {
+        "id": "https://example.org/manifest",
+        "title": "Document Title",
+        "type": "Manifest",
+        "parent_collections": [
+            {
+                "id": "https://example.org/collection",
+                "label": "Collection Name"
+            }
+        ],
+        "homepage": "https://example.org/item/123",
+        "thumbnail": "https://example.org/thumb.jpg",
+        "rights": "https://creativecommons.org/licenses/by/4.0/",
+        "attribution": {
+            "label": "Attribution",
+            "value": "Northwestern University Libraries"
+        }
+    }
+}
+```
+
+The structured data includes:
+- **text**: Combined text content suitable for search or analysis
+- **metadata**: Structured fields including title, rights, attribution, parent collections, and homepage URLs
+- **parent_collections**: Information about collections this manifest belongs to
+- **homepage**: Direct link to the item's webpage (extracted from metadata or related fields)
 
 ### Getting Image URLs
 

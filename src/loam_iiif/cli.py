@@ -15,6 +15,17 @@ from rich.table import Table
 
 from .iiif import IIIFClient
 
+try:
+    from importlib.metadata import version
+except ImportError:
+    # Python < 3.8 fallback
+    from importlib_metadata import version
+
+try:
+    __version__ = version("loam-iiif")
+except Exception:
+    __version__ = "unknown"
+
 # Initialize Rich Console for logging (outputs to stderr)
 console = Console(stderr=True)
 
@@ -39,6 +50,7 @@ def sanitize_filename(name: str) -> str:
 
 
 @click.group()
+@click.version_option(version=__version__, prog_name="loam-iiif")
 def cli():
     """IIIF collection and manifest processing tools."""
     pass

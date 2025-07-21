@@ -1155,23 +1155,23 @@ def test_parent_collection_label_extraction_v2():
         
     client.fetch_json = mock_fetch_json
 
-    # Create chunks and verify parent collection label is extracted
-    chunks = client.create_manifest_chunks([
+    # Parse data and verify parent collection label is extracted
+    parsed_data = client.create_manifest_data([
         "https://digital.library.villanova.edu/Item/vudl:10950/Manifest"
     ])
     
-    assert len(chunks) == 1, "Should create one chunk"
-    chunk = chunks[0]
+    assert len(parsed_data) == 1, "Should create one parsed entry"
+    parsed_item = parsed_data[0]
     
     # Verify parent collection information
-    assert len(chunk["metadata"]["parent_collections"]) == 1, "Should have one parent collection"
-    parent_collection = chunk["metadata"]["parent_collections"][0]
+    assert len(parsed_item["metadata"]["parent_collections"]) == 1, "Should have one parent collection"
+    parent_collection = parsed_item["metadata"]["parent_collections"][0]
     
     assert parent_collection["id"] == "https://digital.library.villanova.edu/Collection/vudl:680115/IIIF"
     assert parent_collection["label"] == "Naturforschenden Vereines in Brünn", "Should extract correct collection label"
     
     # Verify text includes proper parent collection info
-    assert "Part Of: Naturforschenden Vereines in Brünn (https://digital.library.villanova.edu/Collection/vudl:680115/IIIF)" in chunk["text"]
+    assert "Part Of: Naturforschenden Vereines in Brünn (https://digital.library.villanova.edu/Collection/vudl:680115/IIIF)" in parsed_item["text"]
 
 def test_parent_collection_label_extraction_v3():
     """Test extracting parent collection labels from IIIF v3 manifests using 'partOf' field"""
@@ -1197,23 +1197,23 @@ def test_parent_collection_label_extraction_v3():
         
     client.fetch_json = mock_fetch_json
 
-    # Create chunks and verify parent collection label is extracted
-    chunks = client.create_manifest_chunks([
+    # Parse data and verify parent collection label is extracted
+    parsed_data = client.create_manifest_data([
         "https://api.dc.library.northwestern.edu/api/v2/works/test-manifest?as=iiif"
     ])
     
-    assert len(chunks) == 1, "Should create one chunk"
-    chunk = chunks[0]
+    assert len(parsed_data) == 1, "Should create one parsed entry"
+    parsed_item = parsed_data[0]
     
     # Verify parent collection information
-    assert len(chunk["metadata"]["parent_collections"]) == 1, "Should have one parent collection"
-    parent_collection = chunk["metadata"]["parent_collections"][0]
+    assert len(parsed_item["metadata"]["parent_collections"]) == 1, "Should have one parent collection"
+    parent_collection = parsed_item["metadata"]["parent_collections"][0]
     
     assert parent_collection["id"] == "https://api.dc.library.northwestern.edu/api/v2/collections/test-collection?as=iiif"
     assert parent_collection["label"] == "Africa Embracing Obama", "Should extract correct collection label"
     
     # Verify text includes proper parent collection info
-    assert "Part Of: Africa Embracing Obama (https://api.dc.library.northwestern.edu/api/v2/collections/test-collection?as=iiif)" in chunk["text"]
+    assert "Part Of: Africa Embracing Obama (https://api.dc.library.northwestern.edu/api/v2/collections/test-collection?as=iiif)" in parsed_item["text"]
 
 def test_parent_collection_fetch_failure():
     """Test handling when parent collection fetch fails"""
@@ -1240,13 +1240,13 @@ def test_parent_collection_fetch_failure():
 
     # Capture logged warnings
     with patch('logging.Logger.warning') as mock_warning:
-        chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+        parsed_data = client.create_manifest_data(["https://example.org/manifest"])
         
-        assert len(chunks) == 1, "Should still create chunk despite fetch failure"
-        chunk = chunks[0]
+        assert len(parsed_data) == 1, "Should still create parsed entry despite fetch failure"
+        parsed_item = parsed_data[0]
         
         # Should fall back to "Label Unknown"
-        parent_collection = chunk["metadata"]["parent_collections"][0]
+        parent_collection = parsed_item["metadata"]["parent_collections"][0]
         assert parent_collection["label"] == "Parent Collection (Label Unknown)"
         
         # Should log warning about fetch failure
@@ -1296,15 +1296,15 @@ def test_parent_collection_within_list():
         
     client.fetch_json = mock_fetch_json
 
-    chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+    parsed_data = client.create_manifest_data(["https://example.org/manifest"])
     
-    assert len(chunks) == 1, "Should create one chunk"
-    chunk = chunks[0]
+    assert len(parsed_data) == 1, "Should create one parsed entry"
+    parsed_item = parsed_data[0]
     
     # Should have both parent collections
-    assert len(chunk["metadata"]["parent_collections"]) == 2, "Should have two parent collections"
+    assert len(parsed_item["metadata"]["parent_collections"]) == 2, "Should have two parent collections"
     
-    labels = [pc["label"] for pc in chunk["metadata"]["parent_collections"]]
+    labels = [pc["label"] for pc in parsed_item["metadata"]["parent_collections"]]
     assert "First Collection" in labels
     assert "Second Collection" in labels
 
@@ -1330,14 +1330,14 @@ def test_parent_collection_within_object():
         
     client.fetch_json = mock_fetch_json
 
-    chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+    parsed_data = client.create_manifest_data(["https://example.org/manifest"])
     
-    assert len(chunks) == 1, "Should create one chunk"
-    chunk = chunks[0]
+    assert len(parsed_data) == 1, "Should create one parsed entry"
+    parsed_item = parsed_data[0]
     
     # Should extract label from embedded object without additional fetch
-    assert len(chunk["metadata"]["parent_collections"]) == 1, "Should have one parent collection"
-    parent_collection = chunk["metadata"]["parent_collections"][0]
+    assert len(parsed_item["metadata"]["parent_collections"]) == 1, "Should have one parent collection"
+    parent_collection = parsed_item["metadata"]["parent_collections"][0]
     
     assert parent_collection["id"] == "https://example.org/collection"
     assert parent_collection["label"] == "Embedded Collection Label"
@@ -1375,12 +1375,12 @@ def test_parent_collection_complex_label_structures():
         
     client.fetch_json = mock_fetch_json
 
-    chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+    parsed_data = client.create_manifest_data(["https://example.org/manifest"])
     
-    assert len(chunks) == 1, "Should create one chunk"
-    chunk = chunks[0]
+    assert len(parsed_data) == 1, "Should create one parsed entry"
+    parsed_item = parsed_data[0]
     
-    parent_collection = chunk["metadata"]["parent_collections"][0]
+    parent_collection = parsed_item["metadata"]["parent_collections"][0]
     # Should prefer English label over fallback
     assert parent_collection["label"] == "English Label"
 
@@ -1401,16 +1401,16 @@ def test_no_parent_collection():
         
     client.fetch_json = mock_fetch_json
 
-    chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+    parsed_data = client.create_manifest_data(["https://example.org/manifest"])
     
-    assert len(chunks) == 1, "Should create one chunk"
-    chunk = chunks[0]
+    assert len(parsed_data) == 1, "Should create one parsed entry"
+    parsed_item = parsed_data[0]
     
     # Should have empty parent collections list
-    assert chunk["metadata"]["parent_collections"] == []
+    assert parsed_item["metadata"]["parent_collections"] == []
     
     # Text should not include "Part Of" section
-    assert "Part Of:" not in chunk["text"]
+    assert "Part Of:" not in parsed_item["text"]
 
 def test_homepage_extraction_from_related_field():
     """Test homepage extraction from IIIF v2 'related' field"""
@@ -1431,10 +1431,10 @@ def test_homepage_extraction_from_related_field():
         
     client.fetch_json = mock_fetch_json
     
-    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    parsed_data = client.create_manifest_data(["https://digital.library.villanova.edu/Item/test/Manifest"])
     
-    assert len(chunks) == 1
-    metadata = chunks[0]["metadata"]
+    assert len(parsed_data) == 1
+    metadata = parsed_data[0]["metadata"]
     
     # Should extract homepage from related field
     assert metadata["homepage"] == "https://digital.library.villanova.edu/Item/test"
@@ -1461,10 +1461,10 @@ def test_homepage_extraction_from_metadata_about_field():
         
     client.fetch_json = mock_fetch_json
     
-    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    parsed_data = client.create_manifest_data(["https://digital.library.villanova.edu/Item/test/Manifest"])
     
-    assert len(chunks) == 1
-    metadata = chunks[0]["metadata"]
+    assert len(parsed_data) == 1
+    metadata = parsed_data[0]["metadata"]
     
     # Should extract homepage from "Permanent Link" in About metadata
     assert metadata["homepage"] == "https://digital.library.villanova.edu/Item/test"
@@ -1495,10 +1495,10 @@ def test_homepage_extraction_priority():
         
     client.fetch_json = mock_fetch_json
     
-    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    parsed_data = client.create_manifest_data(["https://digital.library.villanova.edu/Item/test/Manifest"])
     
-    assert len(chunks) == 1
-    metadata = chunks[0]["metadata"]
+    assert len(parsed_data) == 1
+    metadata = parsed_data[0]["metadata"]
     
     # Should prefer Permanent Link from metadata over related field
     assert metadata["homepage"] == "https://digital.library.villanova.edu/Item/test-permanent"
@@ -1523,10 +1523,10 @@ def test_rights_extraction_from_attribution():
         
     client.fetch_json = mock_fetch_json
     
-    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    parsed_data = client.create_manifest_data(["https://digital.library.villanova.edu/Item/test/Manifest"])
     
-    assert len(chunks) == 1
-    metadata = chunks[0]["metadata"]
+    assert len(parsed_data) == 1
+    metadata = parsed_data[0]["metadata"]
     
     # Should extract rights URL from attribution HTML
     assert metadata["rights"] == "https://digital.library.villanova.edu/rights.html"
@@ -1561,10 +1561,10 @@ def test_enhanced_metadata_extraction_combined():
         
     client.fetch_json = mock_fetch_json
     
-    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    parsed_data = client.create_manifest_data(["https://digital.library.villanova.edu/Item/test/Manifest"])
     
-    assert len(chunks) == 1
-    metadata = chunks[0]["metadata"]
+    assert len(parsed_data) == 1
+    metadata = parsed_data[0]["metadata"]
     
     # Should extract homepage from "Permanent Link" (priority over related)
     assert metadata["homepage"] == "https://digital.library.villanova.edu/Item/test-permanent"
@@ -1597,10 +1597,10 @@ def test_rights_extraction_fallback_when_no_rights_field():
         
     client.fetch_json = mock_fetch_json
     
-    chunks = client.create_manifest_chunks(["https://example.org/manifest"])
+    parsed_data = client.create_manifest_data(["https://example.org/manifest"])
     
-    assert len(chunks) == 1
-    metadata = chunks[0]["metadata"]
+    assert len(parsed_data) == 1
+    metadata = parsed_data[0]["metadata"]
     
     # Should use explicit rights field, not extract from attribution
     assert metadata["rights"] == "http://creativecommons.org/licenses/by/4.0/"
@@ -1631,10 +1631,10 @@ def test_homepage_extraction_with_related_list():
         
     client.fetch_json = mock_fetch_json
     
-    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    parsed_data = client.create_manifest_data(["https://digital.library.villanova.edu/Item/test/Manifest"])
     
-    assert len(chunks) == 1
-    metadata = chunks[0]["metadata"]
+    assert len(parsed_data) == 1
+    metadata = parsed_data[0]["metadata"]
     
     # Should extract homepage from first item in related list
     assert metadata["homepage"] == "https://digital.library.villanova.edu/Item/test-first"
@@ -1661,10 +1661,10 @@ def test_no_homepage_extraction_when_no_sources():
         
     client.fetch_json = mock_fetch_json
     
-    chunks = client.create_manifest_chunks(["https://digital.library.villanova.edu/Item/test/Manifest"])
+    parsed_data = client.create_manifest_data(["https://digital.library.villanova.edu/Item/test/Manifest"])
     
-    assert len(chunks) == 1
-    metadata = chunks[0]["metadata"]
+    assert len(parsed_data) == 1
+    metadata = parsed_data[0]["metadata"]
     
     # Should remain None when no homepage sources are available
     assert metadata["homepage"] is None
@@ -1705,10 +1705,10 @@ def test_rights_extraction_with_different_html_patterns():
             
         client.fetch_json = mock_fetch_json
         
-        chunks = client.create_manifest_chunks([f"https://example.org/manifest-{i}"])
+        parsed_data = client.create_manifest_data([f"https://example.org/manifest-{i}"])
         
-        assert len(chunks) == 1
-        metadata = chunks[0]["metadata"]
+        assert len(parsed_data) == 1
+        metadata = parsed_data[0]["metadata"]
         
         # Should extract the expected rights URL
         assert metadata["rights"] == test_case["expected"], f"Failed for test case {i}: {test_case['html']}"
@@ -1960,3 +1960,235 @@ def test_non_paginated_collection_with_items():
     # Should work as before
     assert len(manifests) == 3, "Should find 3 manifests in non-paginated collection"
     assert len(collections) == 1, "Should find 1 collection"
+
+def test_northwestern_requiredstatement_dictionary_format():
+    """Test Northwestern's IIIF requiredStatement with dictionary value format (fix for TypeError bug)"""
+    client = IIIFClient(no_cache=True)
+    
+    # This reproduces the Northwestern manifest structure that was causing:
+    # TypeError: expected string or bytes-like object, got 'dict'
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/3/context.json",
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/4fe8b730-100c-4697-86e4-9fc86c677bba?as=iiif",
+        "type": "Manifest",
+        "label": {
+            "none": ["Baseball Players Practicing"]
+        },
+        "requiredStatement": {
+            "label": {
+                "none": ["Attribution"]
+            },
+            "value": {
+                "none": [
+                    "Courtesy of Northwestern University Libraries",
+                    "The photographs in this collection are owned by Carl Smith, Professor Emeritus at Northwestern University, and are provided for use by its students, faculty and staff, and by other researchers visiting this site. This photograph is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License (https://creativecommons.org/licenses/by-nc/4.0/)."
+                ]
+            }
+        },
+        "partOf": [
+            {
+                "id": "https://api.dc.library.northwestern.edu/api/v2/collections/a74462b0-5ab4-496a-97a8-b963bb19b7df?as=iiif",
+                "type": "Collection",
+                "label": {
+                    "none": ["Collection of Carl Smith"]
+                }
+            }
+        ],
+        "homepage": [
+            {
+                "id": "https://dc.library.northwestern.edu/items/4fe8b730-100c-4697-86e4-9fc86c677bba",
+                "type": "Text",
+                "label": {
+                    "none": ["Homepage"]
+                },
+                "format": "text/html"
+            }
+        ]
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+    
+    # This would have failed with "TypeError: expected string or bytes-like object, got 'dict'"
+    # before the fix in _extract_iiif_text usage for rights extraction
+    parsed_data = client.create_manifest_data(["https://api.dc.library.northwestern.edu/api/v2/works/4fe8b730-100c-4697-86e4-9fc86c677bba?as=iiif"])
+    
+    assert len(parsed_data) == 1, "Should create one parsed entry"
+    
+    parsed_item = parsed_data[0]
+    metadata = parsed_item["metadata"]
+    
+    # Verify core fields are extracted correctly
+    assert metadata["title"] == "Baseball Players Practicing"
+    assert metadata["id"] == "https://api.dc.library.northwestern.edu/api/v2/works/4fe8b730-100c-4697-86e4-9fc86c677bba?as=iiif"
+    assert metadata["homepage"] == "https://dc.library.northwestern.edu/items/4fe8b730-100c-4697-86e4-9fc86c677bba"
+    
+    # Verify attribution is extracted from requiredStatement dictionary format
+    attribution = metadata["attribution"]
+    assert attribution is not None, "Should extract attribution"
+    assert attribution["label"] == "Attribution"
+    assert "Courtesy of Northwestern University Libraries" in attribution["value"]
+    assert "Carl Smith" in attribution["value"]
+    assert "Creative Commons" in attribution["value"]
+    
+    # Verify parent collection is extracted
+    parent_collections = metadata["parent_collections"]
+    assert len(parent_collections) == 1, "Should find one parent collection"
+    assert parent_collections[0]["id"] == "https://api.dc.library.northwestern.edu/api/v2/collections/a74462b0-5ab4-496a-97a8-b963bb19b7df?as=iiif"
+    assert parent_collections[0]["label"] == "Collection of Carl Smith"
+    
+    # Verify text parsed_item contains expected content
+    text = parsed_item["text"]
+    assert "Baseball Players Practicing" in text
+    assert "Part Of: Collection of Carl Smith" in text
+    assert "Carl Smith" in text
+
+def test_northwestern_requiredstatement_with_rights_extraction():
+    """Test Northwestern's requiredStatement format with HTML content for rights extraction"""
+    client = IIIFClient(no_cache=True)
+    
+    # Northwestern manifest with HTML content in requiredStatement that could contain rights URLs
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/3/context.json",
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/example?as=iiif",
+        "type": "Manifest",
+        "label": {
+            "none": ["Test Document"]
+        },
+        "requiredStatement": {
+            "label": {
+                "none": ["Attribution"]
+            },
+            "value": {
+                "none": [
+                    'Courtesy of Northwestern University Libraries',
+                    'This material is provided for educational use. For more information see <a href="https://www.library.northwestern.edu/rights.html">Rights Information</a>.'
+                ]
+            }
+        }
+    }
+    
+    def mock_fetch_json(url):
+        return manifest_data
+        
+    client.fetch_json = mock_fetch_json
+    
+    # This tests the specific fix: _extract_iiif_text(raw_attribution, strip_tags=False)
+    # instead of direct regex on dictionary
+    parsed_data = client.create_manifest_data(["https://api.dc.library.northwestern.edu/api/v2/works/example?as=iiif"])
+    
+    assert len(parsed_data) == 1
+    metadata = parsed_data[0]["metadata"]
+    
+    # Should extract rights URL from the HTML in requiredStatement
+    assert metadata["rights"] == "https://www.library.northwestern.edu/rights.html"
+    
+    # Should still extract attribution text
+    attribution = metadata["attribution"]
+    assert attribution is not None
+    assert "Northwestern University Libraries" in attribution["value"]
+
+
+def test_parse_manifest_single_manifest():
+    """Test the new parse_manifest method for individual manifests"""
+    client = IIIFClient(no_cache=True)
+    
+    # Northwestern manifest data
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/3/context.json",
+        "id": "https://api.dc.library.northwestern.edu/api/v2/works/1b607dac-481a-43e8-a11f-3818a0b10e16?as=iiif",
+        "type": "Manifest",
+        "label": {
+            "none": ["Single Manifest Test"]
+        },
+        "requiredStatement": {
+            "label": {
+                "none": ["Attribution"]
+            },
+            "value": {
+                "none": ["Courtesy of Northwestern University Libraries"]
+            }
+        },
+        "partOf": [
+            {
+                "id": "https://api.dc.library.northwestern.edu/api/v2/collections/example?as=iiif",
+                "type": "Collection",
+                "label": {
+                    "none": ["Test Collection"]
+                }
+            }
+        ],
+        "homepage": [
+            {
+                "id": "https://dc.library.northwestern.edu/items/1b607dac-481a-43e8-a11f-3818a0b10e16",
+                "type": "Text",
+                "label": {
+                    "none": ["Homepage"]
+                },
+                "format": "text/html"
+            }
+        ]
+    }
+    
+    def mock_fetch_json(url):
+        if url == "https://api.dc.library.northwestern.edu/api/v2/works/1b607dac-481a-43e8-a11f-3818a0b10e16?as=iiif":
+            return manifest_data
+        return {}
+        
+    client.fetch_json = mock_fetch_json
+    
+    # Test the new single manifest method
+    parsed_item = client.parse_manifest(
+        "https://api.dc.library.northwestern.edu/api/v2/works/1b607dac-481a-43e8-a11f-3818a0b10e16?as=iiif"
+    )
+    
+    # Should return a single parsed entry (not a list)
+    assert parsed_item is not None, "Should create a parsed entry"
+    assert isinstance(parsed_item, dict), "Should return a dictionary, not a list"
+    
+    # Verify the structure matches the expected output
+    assert "text" in parsed_item, "Should have 'text' field"
+    assert "metadata" in parsed_item, "Should have 'metadata' field"
+    
+    metadata = parsed_item["metadata"]
+    expected_fields = ["id", "title", "type", "parent_collections", "homepage", "thumbnail", "rights", "attribution"]
+    for field in expected_fields:
+        assert field in metadata, f"Should have '{field}' field in metadata"
+    
+    # Verify specific values
+    assert metadata["title"] == "Single Manifest Test"
+    assert metadata["type"] == "Manifest"
+    assert metadata["id"] == "https://api.dc.library.northwestern.edu/api/v2/works/1b607dac-481a-43e8-a11f-3818a0b10e16?as=iiif"
+    assert metadata["homepage"] == "https://dc.library.northwestern.edu/items/1b607dac-481a-43e8-a11f-3818a0b10e16"
+    
+    # Verify parent collections
+    assert len(metadata["parent_collections"]) == 1
+    assert metadata["parent_collections"][0]["label"] == "Test Collection"
+    
+    # Verify attribution
+    attribution = metadata["attribution"]
+    assert attribution is not None
+    assert attribution["label"] == "Attribution"
+    assert "Northwestern University Libraries" in attribution["value"]
+    
+    # Verify text content
+    text = parsed_item["text"]
+    assert "Manifest ID:" in text
+    assert "Single Manifest Test" in text
+    assert "Test Collection" in text
+
+def test_parse_manifest_failed_manifest():
+    """Test parse_manifest with a manifest that fails to load"""
+    client = IIIFClient(no_cache=True)
+    
+    def mock_fetch_json(url):
+        return None  # Simulate failed fetch
+        
+    client.fetch_json = mock_fetch_json
+    
+    parsed_item = client.parse_manifest("https://example.org/broken-manifest")
+    
+    # Should return None for failed manifests
+    assert parsed_item is None, "Should return None for failed manifest"
