@@ -1,6 +1,6 @@
 [project]
 name = "loam-iiif"
-version = "0.1.5"
+version = "0.1.6"
 description = "A command-line tool for fetching IIIF Collections on the Web."
 readme = "README.md"
 authors = [{ name = "Brendan Quinn", email = "brendan-quinn@northwestern.edu" }]
@@ -29,11 +29,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = [
-    "twine>=6.0.1",
-    "pytest>=7.4.0",
-    "pytest-cov>=6.0.0",
-]
+dev = ["twine>=6.0.1", "pytest>=7.4.0", "pytest-cov>=6.0.0"]
 
 [tool.coverage.run]
 source = ["src"]
@@ -44,7 +40,7 @@ omit = [
     "*/__pycache__/*",
     "*/venv/*",
     "*/.venv/*",
-    "example.py"
+    "example.py",
 ]
 
 [tool.coverage.report]

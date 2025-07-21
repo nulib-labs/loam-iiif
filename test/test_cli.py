@@ -523,9 +523,18 @@ def test_main_entry_point(cli_runner):
 
 def test_main_entry_point_actual(cli_runner):
     """Test the actual main entry point function using the CLI group"""
-    result = cli_runner.invoke(cli)
+    result = cli_runner.invoke(cli, ['--help'])
     assert result.exit_code == 0
     assert "Usage: cli [OPTIONS] COMMAND" in result.output
+    assert "IIIF collection and manifest processing tools" in result.output
+
+def test_version_option(cli_runner):
+    """Test the --version option displays version information"""
+    result = cli_runner.invoke(cli, ['--version'])
+    assert result.exit_code == 0
+    assert "loam-iiif, version" in result.output
+    # Verify it shows a version number (either actual version or "unknown")
+    assert ("0.1.5" in result.output) or ("unknown" in result.output)
 
 def test_collect_image_size_options(cli_runner, mock_iiif_client):
     """Test that image size options are correctly passed to get_manifest_images"""

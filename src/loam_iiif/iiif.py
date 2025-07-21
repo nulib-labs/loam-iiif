@@ -39,7 +39,7 @@ class TrailingCommaJSONDecoder(json.JSONDecoder):
 class IIIFClient:
     """
     A client for interacting with IIIF APIs, handling data fetching with retries,
-    caching, and generating text chunks for embeddings.
+    caching, and parsing IIIF content for structured data extraction.
     """
 
     DEFAULT_RETRY_TOTAL = 5
@@ -407,16 +407,16 @@ class IIIFClient:
 
         return final_manifest_ids, list(successfully_processed_collections)
 
-    # --- Methods for Chunking ---
+    # --- Methods for Parsing ---
 
-    def create_manifest_chunks(
+    def create_manifest_data(
         self,
         manifest_urls: List[str],
         strip_tags: bool = True
     ) -> List[Dict[str, Any]]:
         """
-        Fetches IIIF Manifests and converts them into structured chunks
-        suitable for vector embeddings. Handles both Presentation API v2 and v3 fields
+        Fetches IIIF Manifests and converts them into structured data
+        suitable for analysis and processing. Handles both Presentation API v2 and v3 fields
         for parent collections ('within', 'partOf'). Rights and attribution are
         placed in metadata.
 
@@ -425,19 +425,19 @@ class IIIFClient:
             strip_tags (bool): If True (default), remove HTML tags from extracted text fields.
 
         Returns:
-            List[Dict[str, Any]]: A list of chunk dictionaries, each with
+            List[Dict[str, Any]]: A list of parsed data dictionaries, each with
                                   'text' and 'metadata'.
         """
-        chunks = []
+        parsed_data = []
         total_manifests = len(manifest_urls)
-        logger.info(f"Starting chunk creation for {total_manifests} manifests. Stripping tags: {strip_tags}")
+        logger.info(f"Starting data parsing for {total_manifests} manifests. Stripping tags: {strip_tags}")
 
         for i, url in enumerate(manifest_urls):
             logger.info(f"Processing manifest {i+1}/{total_manifests}: {url}")
             manifest_data = self.fetch_json(url)
 
             if manifest_data is None:
-                logger.warning(f"Skipping chunk creation for failed manifest: {url}")
+                logger.warning(f"Skipping data parsing for failed manifest: {url}")
                 continue
 
             try:
@@ -555,9 +555,12 @@ class IIIFClient:
                         raw_attribution = manifest_data.get("attribution")
                     
                     if raw_attribution:
-                        rights_match = re.search(r'<a href="([^"]*rights[^"]*\.html)"', raw_attribution)
-                        if rights_match:
-                            rights = rights_match.group(1)
+                        # Extract text but preserve HTML tags to find links
+                        raw_attribution_text = self._extract_iiif_text(raw_attribution, strip_tags=False)
+                        if raw_attribution_text:
+                            rights_match = re.search(r'<a href="([^"]*rights[^"]*\.html)"', raw_attribution_text)
+                            if rights_match:
+                                rights = rights_match.group(1)
 
                 # --- Extract Parent Collection Info (Handles P3 'partOf' and P2 'within') ---
                 parent_collections = []
@@ -642,7 +645,7 @@ class IIIFClient:
                                       })
 
 
-                # --- Construct Text Chunk ---
+                # --- Construct Parsed Data ---
                 text_parts = []
                 text_parts.append(f"Manifest ID: {manifest_id}")
                 if title:
@@ -664,7 +667,7 @@ class IIIFClient:
                     text_parts.append(f"{label_display}: {value}")
 
                 # --- Construct Metadata ---
-                chunk_metadata = {
+                parsed_metadata = {
                     "id": manifest_id,
                     "title": title, # Store the potentially cleaned title here too
                     "type": "Manifest", # Analogous to EAD level
@@ -676,12 +679,12 @@ class IIIFClient:
                 }
                 # Add attribution details if found
                 if attribution_value:
-                    chunk_metadata["attribution"] = {
+                    parsed_metadata["attribution"] = {
                         "label": attribution_label,
                         "value": attribution_value
                     }
                 elif attribution_label: # Handle case where only label might exist (unlikely but possible)
-                     chunk_metadata["attribution"] = {"label": attribution_label, "value": None}
+                     parsed_metadata["attribution"] = {"label": attribution_label, "value": None}
 
 
                 # Extract thumbnail URL if present (handles P3 list and P2 object/string)
@@ -689,45 +692,45 @@ class IIIFClient:
                 if isinstance(thumbnail_data, list) and thumbnail_data: # P3 list
                     thumb_entry = thumbnail_data[0]
                     if isinstance(thumb_entry, dict):
-                         chunk_metadata["thumbnail"] = thumb_entry.get("id")
+                         parsed_metadata["thumbnail"] = thumb_entry.get("id")
                 elif isinstance(thumbnail_data, dict): # P2 object
-                     chunk_metadata["thumbnail"] = thumbnail_data.get("@id") or thumbnail_data.get("id")
+                     parsed_metadata["thumbnail"] = thumbnail_data.get("@id") or thumbnail_data.get("id")
                 elif isinstance(thumbnail_data, str): # P2 string URL
-                     chunk_metadata["thumbnail"] = thumbnail_data
+                     parsed_metadata["thumbnail"] = thumbnail_data
 
 
-                # --- Create Chunk ---
-                chunks.append({
+                # --- Create Parsed Data Entry ---
+                parsed_data.append({
                     "text": "\n".join(text_parts),
-                    "metadata": chunk_metadata
+                    "metadata": parsed_metadata
                 })
 
             except Exception as e:
                 logger.error(f"Error processing manifest data for {url}: {e}", exc_info=True)
                 continue # Skip this manifest on error
 
-        logger.info(f"Finished chunk creation. Generated {len(chunks)} chunks.")
-        return chunks
+        logger.info(f"Finished data parsing. Generated {len(parsed_data)} entries.")
+        return parsed_data
 
-    def save_chunks_to_json(self, chunks: List[Dict[str, Any]], output_file: str):
+    def save_parsed_data_to_json(self, parsed_data: List[Dict[str, Any]], output_file: str):
         """
-        Save generated chunks to a JSON file.
+        Save generated parsed data to a JSON file.
 
         Args:
-            chunks (List[Dict[str, Any]]): List of chunks to save.
+            parsed_data (List[Dict[str, Any]]): List of parsed data to save.
             output_file (str): Path to the output JSON file.
         """
-        logger.info(f"Saving {len(chunks)} chunks to {output_file}")
+        logger.info(f"Saving {len(parsed_data)} entries to {output_file}")
         try:
             with open(output_file, 'w', encoding='utf-8') as f:
-                json.dump(chunks, f, indent=2, ensure_ascii=False)
-            logger.info(f"Successfully saved chunks to {output_file}")
+                json.dump(parsed_data, f, indent=2, ensure_ascii=False)
+            logger.info(f"Successfully saved parsed data to {output_file}")
         except IOError as e:
-            logger.error(f"Failed to write chunks to {output_file}: {e}")
+            logger.error(f"Failed to write parsed data to {output_file}: {e}")
         except Exception as e:
             logger.error(f"An unexpected error occurred during saving: {e}")
 
-    def create_and_save_manifest_chunks(
+    def create_and_save_manifest_data(
         self,
         collection_url: str,
         output_file: str,
@@ -735,17 +738,17 @@ class IIIFClient:
         strip_tags: bool = True
     ) -> List[Dict[str, Any]]:
         """
-        Traverses a IIIF Collection, creates manifest chunks, and saves them to a JSON file.
+        Traverses a IIIF Collection, parses manifest data, and saves it to a JSON file.
 
         Args:
             collection_url (str): The starting URL of the IIIF Collection.
-            output_file (str): Path to the output JSON file for the chunks.
+            output_file (str): Path to the output JSON file for the parsed data.
             max_manifests (Optional[int]): Maximum number of manifests to process.
             strip_tags (bool): If True (default), remove HTML tags from extracted text fields
-                               during chunk creation.
+                               during data parsing.
 
         Returns:
-            List[Dict[str, Any]]: The list of generated chunks.
+            List[Dict[str, Any]]: The list of generated parsed data.
         """
         logger.info(f"Starting process for collection: {collection_url}")
         manifest_urls, _ = self.get_manifests_and_collections_ids(
@@ -753,18 +756,58 @@ class IIIFClient:
         )
 
         if not manifest_urls:
-            logger.warning(f"No manifest URLs found for collection: {collection_url}. No chunks generated.")
+            logger.warning(f"No manifest URLs found for collection: {collection_url}. No data generated.")
             return []
 
         # Pass strip_tags argument down
-        chunks = self.create_manifest_chunks(manifest_urls, strip_tags=strip_tags)
+        parsed_data = self.create_manifest_data(manifest_urls, strip_tags=strip_tags)
 
-        if chunks:
-            self.save_chunks_to_json(chunks, output_file)
+        if parsed_data:
+            self.save_parsed_data_to_json(parsed_data, output_file)
         else:
-            logger.warning(f"No chunks were generated from the found manifests for collection: {collection_url}")
+            logger.warning(f"No data was generated from the found manifests for collection: {collection_url}")
 
-        return chunks
+        return parsed_data
+    
+    def parse_manifest(
+        self,
+        manifest_url: str,
+        strip_tags: bool = True
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Parses a single IIIF Manifest into structured text and metadata.
+        
+        This is a convenience method for processing individual manifests, returning
+        structured data with 'text' and 'metadata' fields.
+        
+        Args:
+            manifest_url (str): The URL of the IIIF Manifest to parse.
+            strip_tags (bool): If True (default), remove HTML tags from extracted text fields.
+        
+        Returns:
+            Optional[Dict[str, Any]]: Parsed manifest data with 'text' and 'metadata',
+                                      or None if the manifest could not be processed.
+        
+        Example:
+            client = IIIFClient()
+            parsed_data = client.parse_manifest(
+                "https://api.dc.library.northwestern.edu/api/v2/works/1b607dac-481a-43e8-a11f-3818a0b10e16?as=iiif"
+            )
+            if parsed_data:
+                print(f"Title: {parsed_data['metadata']['title']}")
+                print(f"Text: {parsed_data['text'][:100]}...")
+        """
+        logger.info(f"Parsing manifest: {manifest_url}")
+        
+        # Use existing create_manifest_data method with single URL
+        parsed_data = self.create_manifest_data([manifest_url], strip_tags=strip_tags)
+        
+        if parsed_data:
+            logger.info(f"Successfully parsed manifest: {manifest_url}")
+            return parsed_data[0]  # Return the single parsed result
+        else:
+            logger.warning(f"Failed to parse manifest: {manifest_url}")
+            return None
     
     def get_manifest_images(self, manifest_url: str, width: int = 768, height: int = 2000, format: str = 'jpg', exact: bool = False, use_max: bool = False) -> List[str]:
         """
