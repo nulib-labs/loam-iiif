@@ -534,7 +534,7 @@ def test_version_option(cli_runner):
     assert result.exit_code == 0
     assert "loam-iiif, version" in result.output
     # Verify it shows a version number (either actual version or "unknown")
-    assert ("0.1.5" in result.output) or ("unknown" in result.output)
+    assert ("0.1.6" in result.output) or ("unknown" in result.output)
 
 def test_collect_image_size_options(cli_runner, mock_iiif_client):
     """Test that image size options are correctly passed to get_manifest_images"""
