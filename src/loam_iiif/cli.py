@@ -7,6 +7,7 @@ import re
 import sys
 import tempfile
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import click
 from rich.console import Console
@@ -47,6 +48,17 @@ def sanitize_filename(name: str) -> str:
     base, ext = os.path.splitext(name)
     base = re.sub(r'[^\w\-_.]', '_', base)
     return base + ext
+
+def manifest_filename_from_url(manifest_url: str) -> str:
+    """
+    Build a safe JSON filename from a manifest URL without double extensions.
+    """
+    parsed = urlsplit(manifest_url)
+    path_tail = parsed.path.rstrip("/").split("/")[-1] if parsed.path else ""
+    candidate = sanitize_filename(path_tail) or "manifest"
+    if candidate.lower().endswith(".json"):
+        return candidate
+    return f"{candidate}.json"
 
 
 @click.group()
@@ -218,7 +230,7 @@ def collect(
                 )
 
             # Handle manifest downloads if enabled
-            if download_manifests and not no_cache:
+            if download_manifests:
                 if debug:
                     logger.debug(f"Downloading JSON contents for {len(manifests)} manifests.")
 
@@ -232,13 +244,13 @@ def collect(
                 # Manifests will be cached automatically by fetch_json()
                 for idx, manifest_url in enumerate(manifests, start=1):
                     try:
-                        manifest_data = client.fetch_json(manifest_url)
+                        manifest_json = client.fetch_json(manifest_url)
                         if output:
                             # Save each manifest to its own file in the output directory
-                            filename = sanitize_filename(manifest_url.split("/")[-1]) + ".json"
+                            filename = manifest_filename_from_url(manifest_url)
                             manifest_path = output_dir / filename
                             with open(manifest_path, "w", encoding="utf-8") as f:
-                                json.dump(manifest_data, f, indent=2)
+                                json.dump(manifest_json, f, indent=2)
                         if debug:
                             logger.debug(f"Processed manifest {idx}/{len(manifests)}")
                     except Exception as e:

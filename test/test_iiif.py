@@ -837,9 +837,9 @@ def test_unsupported_iiif_context():
             }]
         },
         
-        # Invalid context type
+        # Unsupported context list
         {
-            "@context": ["http://iiif.io/api/presentation/2/context.json"],
+            "@context": ["https://example.org/custom/context.json"],
             "sequences": [{
                 "canvases": [{
                     "images": [{
@@ -870,6 +870,106 @@ def test_unsupported_iiif_context():
                 f"Unsupported or missing IIIF context in manifest: {manifest_data.get('@context')}"
             )
             mock_error.reset_mock()
+
+def test_extract_iiif_text_handles_p2_language_literal():
+    """Test extraction of IIIF Presentation 2 language literal objects."""
+    client = IIIFClient(no_cache=True)
+    extracted = client._extract_iiif_text({"@value": "Hello World", "@language": "en"})
+    assert extracted == "Hello World"
+
+def test_get_manifest_images_accepts_context_array_v3():
+    """Test extracting images when Presentation 3 context is an array."""
+    client = IIIFClient(no_cache=True)
+    manifest_data = {
+        "@context": [
+            "https://example.org/ext/context.json",
+            "http://iiif.io/api/presentation/3/context.json"
+        ],
+        "items": [{
+            "items": [{
+                "items": [{
+                    "body": {
+                        "service": {"id": "https://iiif.test.org/service-array"}
+                    }
+                }]
+            }]
+        }]
+    }
+
+    client.fetch_json = lambda url: manifest_data
+    images = client.get_manifest_images("http://example.org/manifest")
+    assert images == ["https://iiif.test.org/service-array/full/!768,2000/0/default.jpg"]
+
+def test_get_manifest_images_prefers_service_over_body_id():
+    """Test v3 image URL generation prefers service.id over body.id when both are present."""
+    client = IIIFClient(no_cache=True)
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/3/context.json",
+        "items": [{
+            "items": [{
+                "items": [{
+                    "body": {
+                        "id": "https://iiif.example.org/image/full/max/0/default.jpg",
+                        "service": [
+                            {"id": "https://iiif.example.org/image"}
+                        ]
+                    }
+                }]
+            }]
+        }]
+    }
+
+    client.fetch_json = lambda url: manifest_data
+    images = client.get_manifest_images("http://example.org/manifest", width=1000, height=1200)
+    assert images == ["https://iiif.example.org/image/full/!1000,1200/0/default.jpg"]
+
+def test_get_manifest_images_keeps_existing_non_default_jpg_request():
+    """Test existing IIIF image requests are preserved even when not default.jpg."""
+    client = IIIFClient(no_cache=True)
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/3/context.json",
+        "items": [{
+            "items": [{
+                "items": [{
+                    "body": {
+                        "service": {
+                            "id": "https://iiif.example.org/image/full/max/0/color.jpg"
+                        }
+                    }
+                }]
+            }]
+        }]
+    }
+
+    client.fetch_json = lambda url: manifest_data
+    images = client.get_manifest_images("http://example.org/manifest")
+    assert images == ["https://iiif.example.org/image/full/max/0/color.jpg"]
+
+def test_paginated_collection_with_object_links():
+    """Test IIIF 2.1.1 pagination with object-valued first/next links."""
+    client = IIIFClient(no_cache=True)
+
+    page1_url = "https://example.org/collection/page/1"
+    page2_url = "https://example.org/collection/page/2"
+    pages = {
+        "https://example.org/collection/root": {
+            "first": {"@id": page1_url, "@type": "sc:Collection"}
+        },
+        page1_url: {
+            "manifests": [{"@id": "https://example.org/manifest/1", "@type": "sc:Manifest"}],
+            "next": {"@id": page2_url, "@type": "sc:Collection"}
+        },
+        page2_url: {
+            "manifests": [{"@id": "https://example.org/manifest/2", "@type": "sc:Manifest"}]
+        }
+    }
+
+    client.fetch_json = lambda url: pages[url]
+    manifests, collections = client.get_manifests_and_collections_ids("https://example.org/collection/root")
+
+    assert "https://example.org/manifest/1" in manifests
+    assert "https://example.org/manifest/2" in manifests
+    assert "https://example.org/collection/root" in collections
 
 def test_image_url_formatting_errors():
     """Test handling of errors during image URL formatting"""

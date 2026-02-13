@@ -6,7 +6,7 @@ import pytest
 from click.testing import CliRunner
 import logging
 
-from loam_iiif.cli import sanitize_filename, collect, cli
+from loam_iiif.cli import sanitize_filename, manifest_filename_from_url, collect, cli
 
 @pytest.fixture
 def cli_runner():
@@ -114,6 +114,12 @@ def test_sanitize_filename():
     
     for input_name, expected in test_cases:
         assert sanitize_filename(input_name) == expected
+
+def test_manifest_filename_from_url():
+    """Test manifest filename generation avoids double .json extensions."""
+    assert manifest_filename_from_url("http://example.com/manifest.json") == "manifest.json"
+    assert manifest_filename_from_url("http://example.com/manifest") == "manifest.json"
+    assert manifest_filename_from_url("http://example.com/manifest.json?x=1") == "manifest.json"
 
 def test_collect_basic_json_output(cli_runner, mock_iiif_client, tmp_path):
     """Test basic collect command with JSON output"""
@@ -441,6 +447,33 @@ def test_collect_manifest_download_error_handling(cli_runner, mock_iiif_client, 
             for record in caplog.records
         )
 
+def test_collect_images_and_download_manifests_does_not_crash(cli_runner, mock_iiif_client, tmp_path):
+    """Test combining --images and --download-manifests keeps image output path intact."""
+    output_dir = tmp_path / "manifests"
+    result = cli_runner.invoke(cli, [
+        'collect',
+        'http://example.com/collection',
+        '--images',
+        '--download-manifests',
+        '-f', 'json',
+        '-o', str(output_dir)
+    ])
+    assert result.exit_code == 0
+
+def test_collect_download_manifests_with_no_cache_still_downloads(cli_runner, mock_iiif_client, tmp_path):
+    """Test --download-manifests still works when --no-cache is enabled."""
+    output_dir = tmp_path / "manifests"
+    result = cli_runner.invoke(cli, [
+        'collect',
+        'http://example.com/collection',
+        '--download-manifests',
+        '--no-cache',
+        '-o', str(output_dir)
+    ])
+    assert result.exit_code == 0
+    assert output_dir.exists()
+    assert len(list(output_dir.glob('*.json'))) == 2
+
 def test_collect_jsonl_stdout_with_images(cli_runner, mock_iiif_client):
     """Test collect command printing JSONL with images to stdout"""
     result = cli_runner.invoke(cli, [
@@ -534,7 +567,7 @@ def test_version_option(cli_runner):
     assert result.exit_code == 0
     assert "loam-iiif, version" in result.output
     # Verify it shows a version number (either actual version or "unknown")
-    assert ("0.1.6" in result.output) or ("unknown" in result.output)
+    assert ("0.1.7" in result.output) or ("unknown" in result.output)
 
 def test_collect_image_size_options(cli_runner, mock_iiif_client):
     """Test that image size options are correctly passed to get_manifest_images"""

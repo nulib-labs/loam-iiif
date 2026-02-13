@@ -1,7 +1,7 @@
+import html
 import json
 import logging
 import re
-import html # Import the html module
 from typing import List, Set, Tuple, Optional, Dict, Any, Union
 
 import requests
@@ -123,6 +123,48 @@ class IIIFClient:
 
         return str(id_val) # Ensure it's a string
 
+    def _extract_resource_id(self, value: Any, parent_url: str) -> Optional[str]:
+        """
+        Extract a linked resource identifier from either a URI string or
+        an object reference with `id` / `@id`.
+        """
+        if isinstance(value, str):
+            return value
+        if isinstance(value, dict):
+            id_val = value.get("id") or value.get("@id")
+            if id_val:
+                return str(id_val)
+        logger.warning(f"Resource link without usable ID encountered in {parent_url}: {value}")
+        return None
+
+    def _detect_presentation_version(self, context: Any) -> Tuple[bool, bool]:
+        """
+        Determine whether a manifest is IIIF Presentation v2 or v3 from @context.
+        Accepts both canonical http and common https variants and list-valued contexts.
+        """
+        if isinstance(context, str):
+            contexts = [context]
+        elif isinstance(context, list):
+            contexts = [c for c in context if isinstance(c, str)]
+        else:
+            contexts = []
+
+        is_v3 = any(
+            c in (
+                "http://iiif.io/api/presentation/3/context.json",
+                "https://iiif.io/api/presentation/3/context.json",
+            )
+            for c in contexts
+        )
+        is_v2 = any(
+            c in (
+                "http://iiif.io/api/presentation/2/context.json",
+                "https://iiif.io/api/presentation/2/context.json",
+            )
+            for c in contexts
+        )
+        return is_v2, is_v3
+
     def _normalize_item_type(self, item: dict) -> str:
         """
         Gets a normalized item type from a IIIF item (handles 'type' and '@type').
@@ -180,8 +222,11 @@ class IIIFClient:
                 elif isinstance(item, dict) and "@value" in item:
                     raw_text_values.append(item["@value"])
         elif isinstance(data, dict):
-            # Handle P3 language map
-            if any(lang in data for lang in ["en", "none"] + list(data.keys())): # Check if keys look like lang codes
+            # Handle P2 language literal object first
+            if "@value" in data and isinstance(data.get("@value"), str):
+                raw_text_values.append(data["@value"])
+            else:
+                # Handle P3 language map
                 lang_keys = list(data.keys())
                 key_to_use = None
                 if "en" in lang_keys:
@@ -189,15 +234,18 @@ class IIIFClient:
                 elif "none" in lang_keys:
                     key_to_use = "none"
                 elif lang_keys:
-                    key_to_use = lang_keys[0] # Fallback to first key
+                    key_to_use = lang_keys[0]
 
-                if key_to_use and isinstance(data.get(key_to_use), list):
-                    for item in data[key_to_use]:
-                        if isinstance(item, str):
-                            raw_text_values.append(item)
-            # Handle P2 language literal object
-            elif "@value" in data:
-                 raw_text_values.append(data["@value"])
+                if key_to_use:
+                    lang_value = data.get(key_to_use)
+                    if isinstance(lang_value, list):
+                        for item in lang_value:
+                            if isinstance(item, str):
+                                raw_text_values.append(item)
+                            elif isinstance(item, dict) and "@value" in item and isinstance(item.get("@value"), str):
+                                raw_text_values.append(item["@value"])
+                    elif isinstance(lang_value, str):
+                        raw_text_values.append(lang_value)
 
 
         if not raw_text_values:
@@ -826,12 +874,14 @@ class IIIFClient:
         """
         try:
             data = self.fetch_json(manifest_url)
+            if not isinstance(data, dict):
+                logger.error(f"Invalid manifest data type for {manifest_url}: {type(data)}")
+                return []
             image_ids = []
 
             # Check @context to determine IIIF version
             context = data.get("@context")
-            is_v3 = context == "http://iiif.io/api/presentation/3/context.json"
-            is_v2 = context == "http://iiif.io/api/presentation/2/context.json"
+            is_v2, is_v3 = self._detect_presentation_version(context)
 
             # Parse manifest based on version
             if is_v3:
@@ -856,27 +906,29 @@ class IIIFClient:
                                     
                                 body = annotation.get("body", {})
                                 if isinstance(body, dict):
-                                    # Try to get image ID from different possible locations
                                     image_id = None
-                                    
-                                    # First try direct ID from body
-                                    if "id" in body:
-                                        image_id = body["id"]
-                                        # If it's a full image URL, extract base URL
-                                        if '/full/' in image_id:
-                                            image_id = image_id.split('/full/')[0]
-                                    
-                                    # If no direct ID, try service
-                                    if not image_id and "service" in body:
+
+                                    # Prefer image service ID for constructing new size/format URLs.
+                                    if "service" in body:
                                         service = body["service"]
-                                        # Handle both list and direct object formats
-                                        if isinstance(service, list) and service:
-                                            service = service[0]
-                                        if isinstance(service, dict):
-                                            # Try both @id and id
+                                        if isinstance(service, list):
+                                            for service_entry in service:
+                                                if isinstance(service_entry, dict):
+                                                    image_id = service_entry.get("@id") or service_entry.get("id")
+                                                    if image_id:
+                                                        break
+                                        elif isinstance(service, dict):
                                             image_id = service.get("@id") or service.get("id")
-                                            # Add even if None to trigger error handling
-                                            image_ids.append(image_id)
+
+                                    # Fallback to direct body ID
+                                    if not image_id and isinstance(body.get("id"), str):
+                                        image_id = body["id"]
+                                        if "/full/" in image_id:
+                                            image_id = image_id.split("/full/")[0]
+
+                                    if image_id is None and "service" in body:
+                                        # Keep prior behavior of surfacing formatting errors for null IDs.
+                                        image_ids.append(image_id)
                                     elif image_id:
                                         image_ids.append(image_id)
                                         
@@ -886,21 +938,39 @@ class IIIFClient:
 
             elif is_v2:
                 # IIIF 2.0 parsing
-                if "sequences" in data:
-                    for canvas in data["sequences"][0]["canvases"]:
-                        if "images" in canvas:
-                            for image in canvas["images"]:
-                                # Check for direct resource @id first (NLS style)
-                                if "@id" in image.get("resource", {}):
-                                    image_id = image["resource"]["@id"]
-                                    # Convert full image URL to IIIF base URL
-                                    if '/full/' in image_id:
-                                        parts = image_id.split('/full/')
-                                        image_id = parts[0]
-                                    image_ids.append(image_id)
-                                # Fallback to service ID if available
-                                elif "@id" in image["resource"].get("service", {}):
-                                    image_id = image["resource"]["service"]["@id"]
+                if isinstance(data.get("sequences"), list) and data["sequences"]:
+                    canvases = data["sequences"][0].get("canvases", [])
+                    for canvas in canvases:
+                        if not isinstance(canvas, dict):
+                            continue
+                        for image in canvas.get("images", []):
+                            if not isinstance(image, dict):
+                                continue
+                            resource = image.get("resource", {})
+                            if not isinstance(resource, dict):
+                                continue
+                            # Check for direct resource @id first (NLS style)
+                            if isinstance(resource.get("@id"), str):
+                                image_id = resource["@id"]
+                                # Convert full image URL to IIIF base URL
+                                if '/full/' in image_id:
+                                    parts = image_id.split('/full/')
+                                    image_id = parts[0]
+                                image_ids.append(image_id)
+                                continue
+
+                            # Fallback to service ID if available
+                            service = resource.get("service", {})
+                            if isinstance(service, list):
+                                for service_entry in service:
+                                    if isinstance(service_entry, dict):
+                                        image_id = service_entry.get("@id") or service_entry.get("id")
+                                        if image_id:
+                                            image_ids.append(image_id)
+                                            break
+                            elif isinstance(service, dict):
+                                image_id = service.get("@id") or service.get("id")
+                                if image_id:
                                     image_ids.append(image_id)
             else:
                 logger.error(f"Unsupported or missing IIIF context in manifest: {context}")
@@ -918,7 +988,7 @@ class IIIFClient:
                     # Remove any trailing /info.json
                     image_id = re.sub(r'/info\.json$', '', image_id)
                     # Format as IIIF URL with size parameter based on version and options
-                    if not re.search(r'/full/(?:max|full|!\d+,\d+|\d+,\d+)/0/default\.jpg$', image_id):
+                    if not re.search(r'/full/[^/]+/0/[^/]+$', image_id):
                         if use_max:
                             # Use 'full' for v2 manifests and 'max' for v3
                             size_param = "full" if is_v2 else "max"
@@ -961,7 +1031,7 @@ class IIIFClient:
         collection_count = 0
         
         # Start with the first page
-        first_page_url = collection_data.get("first")
+        first_page_url = self._extract_resource_id(collection_data.get("first"), "paginated collection")
         if not first_page_url:
             logger.warning("Paginated collection has no 'first' property")
             return manifest_count, collection_count
@@ -1050,7 +1120,7 @@ class IIIFClient:
                 break
             
             # Get next page URL
-            next_page_url = page_data.get("next")
+            next_page_url = self._extract_resource_id(page_data.get("next"), current_page_url)
             if next_page_url:
                 current_page_url = next_page_url
                 page_number += 1
