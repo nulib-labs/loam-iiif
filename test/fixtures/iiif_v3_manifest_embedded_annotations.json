@@ -1,0 +1,63 @@
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "id": "https://example.org/manifest/1",
+  "type": "Manifest",
+  "label": {"en": ["Test Manifest with Embedded Annotations"]},
+  "homepage": [{"id": "https://example.org/item/1", "type": "Text"}],
+  "items": [
+    {
+      "id": "https://example.org/canvas/p1",
+      "type": "Canvas",
+      "label": {"en": ["Page 1"]},
+      "annotations": [
+        {
+          "id": "https://example.org/annotation-page/p1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://example.org/annotation/p1",
+              "type": "Annotation",
+              "motivation": "supplementing",
+              "body": {
+                "type": "TextualBody",
+                "value": "Transcription for page one.",
+                "language": "en"
+              },
+              "target": "https://example.org/canvas/p1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "https://example.org/canvas/p2",
+      "type": "Canvas",
+      "label": {"en": ["Page 2"]},
+      "annotations": [
+        {
+          "id": "https://example.org/annotation-page/p2",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://example.org/annotation/p2",
+              "type": "Annotation",
+              "motivation": "supplementing",
+              "body": {
+                "type": "TextualBody",
+                "value": "Transcription for page two.",
+                "language": "en"
+              },
+              "target": "https://example.org/canvas/p2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "https://example.org/canvas/p3",
+      "type": "Canvas",
+      "label": {"en": ["Page 3 (no transcription)"]},
+      "items": []
+    }
+  ]
+}
