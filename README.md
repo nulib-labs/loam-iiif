@@ -482,6 +482,60 @@ The structured data includes:
 - **parent_collections**: Information about collections this manifest belongs to
 - **homepage**: Direct link to the item's webpage (extracted from metadata or related fields)
 
+### Extracting Transcriptions (Per-Canvas)
+
+For manifests that include transcription annotations, `parse_manifest_canvases` returns one document per canvas rather than one per manifest. This is useful for RAG pipelines where page-level granularity produces better retrieval results. Canvases without transcriptions are skipped automatically.
+
+Both embedded annotation pages (items inline in the manifest) and referenced annotation pages (a stub that points to an external URL) are handled transparently.
+
+```python
+from loam_iiif.iiif import IIIFClient
+
+client = IIIFClient()
+
+canvas_docs = client.parse_manifest_canvases(
+    "https://example.org/manifest-with-transcriptions",
+    strip_tags=True
+)
+
+for doc in canvas_docs:
+    print(f"Canvas: {doc['metadata']['canvas_label']}")
+    print(f"Text:   {doc['text'][:100]}")
+```
+
+#### Per-Canvas Data Structure
+
+```python
+{
+    "text": "Transcription text for this canvas...",
+    "metadata": {
+        "canvas_id": "https://example.org/canvas/p1",
+        "canvas_label": "Page 1",
+        "manifest_id": "https://example.org/manifest",
+        "title": "Document Title",
+        "homepage": "https://example.org/item/123"
+    }
+}
+```
+
+#### Using with `parse_manifest` as a fallback
+
+For collections that mix transcribed and non-transcribed items, try canvases first and fall back to manifest-level parsing:
+
+```python
+client = IIIFClient()
+manifests, _ = client.get_manifests_and_collections_ids(collection_url)
+
+for manifest_url in manifests:
+    docs = client.parse_manifest_canvases(manifest_url)
+    if not docs:
+        doc = client.parse_manifest(manifest_url)
+        docs = [doc] if doc else []
+    for doc in docs:
+        # index doc in your vector database
+        pass
+```
+
 ### Getting Image URLs
 
 ```python

@@ -856,7 +856,124 @@ class IIIFClient:
         else:
             logger.warning(f"Failed to parse manifest: {manifest_url}")
             return None
-    
+
+    def _resolve_annotation_page(self, anno_page: dict) -> List[dict]:
+        """
+        Returns annotation items from an AnnotationPage dict.
+
+        If the page has an inline 'items' list (embedded), returns it directly.
+        If it is a reference stub (has 'id' but no 'items'), fetches the external
+        URL and returns the items from the response.
+        """
+        items = anno_page.get("items")
+        if items is not None:
+            return items if isinstance(items, list) else []
+
+        page_id = anno_page.get("id") or anno_page.get("@id")
+        if not page_id:
+            return []
+
+        try:
+            data = self.fetch_json(page_id)
+            if isinstance(data, dict):
+                return data.get("items") or []
+        except Exception as e:
+            logger.warning(f"Failed to fetch external annotation page {page_id}: {e}")
+        return []
+
+    def _extract_canvas_transcription(self, canvas: dict, strip_tags: bool = True) -> Optional[str]:
+        """
+        Extracts transcription text from a canvas's 'annotations' property.
+
+        Only considers annotations with motivation 'supplementing' and a TextualBody.
+        Returns concatenated text from all matching annotations, or None if none found.
+        """
+        text_parts = []
+        for anno_page in canvas.get("annotations", []):
+            if not isinstance(anno_page, dict):
+                continue
+            for annotation in self._resolve_annotation_page(anno_page):
+                if not isinstance(annotation, dict):
+                    continue
+                motivation = annotation.get("motivation")
+                if motivation == "painting":
+                    continue
+                body = annotation.get("body")
+                if not isinstance(body, dict) or body.get("type") != "TextualBody":
+                    continue
+                value = body.get("value")
+                if value and isinstance(value, str):
+                    text = html.unescape(value)
+                    if strip_tags:
+                        text = re.sub(r'<[^>]+>', '', text)
+                    text = text.strip()
+                    if text:
+                        text_parts.append(text)
+        return "\n".join(text_parts) if text_parts else None
+
+    def parse_manifest_canvases(
+        self,
+        manifest_url: str,
+        strip_tags: bool = True
+    ) -> List[Dict[str, Any]]:
+        """
+        Parses a IIIF Manifest into per-canvas documents containing transcription text.
+
+        Returns one document per canvas that has supplementing annotations (transcriptions).
+        Canvases without transcriptions are skipped. Each document carries manifest-level
+        metadata as context for retrieval.
+
+        Handles both embedded AnnotationPages (items inline in the manifest) and referenced
+        AnnotationPages (stub with id only, items fetched from the external URL).
+
+        Args:
+            manifest_url (str): The URL of the IIIF Manifest to parse.
+            strip_tags (bool): If True (default), remove HTML tags from text fields.
+
+        Returns:
+            List of dicts, one per canvas with transcription text, each containing:
+              - text: transcription text for this canvas
+              - metadata: canvas_id, canvas_label, manifest_id, title, homepage
+        """
+        manifest_data = self.fetch_json(manifest_url)
+        if not isinstance(manifest_data, dict):
+            logger.warning(f"Failed to fetch manifest: {manifest_url}")
+            return []
+
+        manifest_id = self._normalize_item_id(manifest_data, manifest_url) or manifest_url
+        title = self._extract_iiif_text(manifest_data.get("label"), strip_tags=strip_tags)
+
+        homepage_url = None
+        homepage_data = manifest_data.get("homepage")
+        if isinstance(homepage_data, list) and homepage_data:
+            entry = homepage_data[0]
+            if isinstance(entry, dict):
+                homepage_url = entry.get("id")
+        elif isinstance(homepage_data, dict):
+            homepage_url = homepage_data.get("id") or homepage_data.get("@id")
+        elif isinstance(homepage_data, str):
+            homepage_url = homepage_data
+
+        results = []
+        for canvas in manifest_data.get("items", []):
+            if not isinstance(canvas, dict):
+                continue
+            transcription = self._extract_canvas_transcription(canvas, strip_tags=strip_tags)
+            if not transcription:
+                continue
+            results.append({
+                "text": transcription,
+                "metadata": {
+                    "canvas_id": self._normalize_item_id(canvas, manifest_url),
+                    "canvas_label": self._extract_iiif_text(canvas.get("label"), strip_tags=strip_tags),
+                    "manifest_id": manifest_id,
+                    "title": title,
+                    "homepage": homepage_url,
+                }
+            })
+
+        return results
+
     def get_manifest_images(self, manifest_url: str, width: int = 768, height: int = 2000, format: str = 'jpg', exact: bool = False, use_max: bool = False) -> List[str]:
         """
         Extract formatted image URLs from a manifest with specified dimensions.

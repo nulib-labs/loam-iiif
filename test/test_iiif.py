@@ -2282,13 +2282,171 @@ def test_parse_manifest_single_manifest():
 def test_parse_manifest_failed_manifest():
     """Test parse_manifest with a manifest that fails to load"""
     client = IIIFClient(no_cache=True)
-    
+
     def mock_fetch_json(url):
         return None  # Simulate failed fetch
-        
+
     client.fetch_json = mock_fetch_json
-    
+
     parsed_item = client.parse_manifest("https://example.org/broken-manifest")
-    
+
     # Should return None for failed manifests
     assert parsed_item is None, "Should return None for failed manifest"
+
+
+def test_parse_manifest_canvases_embedded_annotations():
+    """Test parse_manifest_canvases with embedded (inline) annotation pages"""
+    client = IIIFClient(no_cache=True)
+    manifest_data = load_fixture("iiif_v3_manifest_embedded_annotations.json")
+
+    client.fetch_json = lambda url: manifest_data
+
+    results = client.parse_manifest_canvases("https://example.org/manifest/1")
+
+    # Two canvases have transcriptions; the third has none and should be skipped
+    assert len(results) == 2
+
+    assert results[0]["text"] == "Transcription for page one."
+    assert results[0]["metadata"]["canvas_id"] == "https://example.org/canvas/p1"
+    assert results[0]["metadata"]["canvas_label"] == "Page 1"
+    assert results[0]["metadata"]["manifest_id"] == "https://example.org/manifest/1"
+    assert results[0]["metadata"]["title"] == "Test Manifest with Embedded Annotations"
+    assert results[0]["metadata"]["homepage"] == "https://example.org/item/1"
+
+    assert results[1]["text"] == "Transcription for page two."
+    assert results[1]["metadata"]["canvas_id"] == "https://example.org/canvas/p2"
+
+
+def test_parse_manifest_canvases_referenced_annotations():
+    """Test parse_manifest_canvases fetches external referenced annotation pages"""
+    client = IIIFClient(no_cache=True)
+    manifest_data = load_fixture("iiif_v3_manifest_referenced_annotations.json")
+
+    external_annotation_page = {
+        "@context": "http://iiif.io/api/presentation/3/context.json",
+        "id": "https://example.org/annotation-page/r1",
+        "type": "AnnotationPage",
+        "items": [
+            {
+                "id": "https://example.org/annotation/r1",
+                "type": "Annotation",
+                "motivation": "supplementing",
+                "body": {
+                    "type": "TextualBody",
+                    "value": "Transcription from external page.",
+                    "language": "en"
+                },
+                "target": "https://example.org/canvas/r1"
+            }
+        ]
+    }
+
+    def mock_fetch_json(url):
+        if url == "https://example.org/annotation-page/r1":
+            return external_annotation_page
+        return manifest_data
+
+    client.fetch_json = mock_fetch_json
+
+    results = client.parse_manifest_canvases("https://example.org/manifest/2")
+
+    # Only canvas r1 has a transcription; r2 has an empty annotations list
+    assert len(results) == 1
+    assert results[0]["text"] == "Transcription from external page."
+    assert results[0]["metadata"]["canvas_id"] == "https://example.org/canvas/r1"
+    assert results[0]["metadata"]["manifest_id"] == "https://example.org/manifest/2"
+    assert results[0]["metadata"]["title"] == "Test Manifest with Referenced Annotations"
+    assert results[0]["metadata"]["homepage"] == "https://example.org/item/2"
+
+
+def test_parse_manifest_canvases_skips_painting_motivation():
+    """Test that painting annotations are ignored; supplementing and commenting are included"""
+    client = IIIFClient(no_cache=True)
+
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/3/context.json",
+        "id": "https://example.org/manifest/3",
+        "type": "Manifest",
+        "label": {"en": ["Manifest"]},
+        "items": [
+            {
+                "id": "https://example.org/canvas/c1",
+                "type": "Canvas",
+                "label": {"en": ["Page 1"]},
+                "annotations": [
+                    {
+                        "id": "https://example.org/annotation-page/c1",
+                        "type": "AnnotationPage",
+                        "items": [
+                            {
+                                "id": "https://example.org/annotation/c1a",
+                                "type": "Annotation",
+                                "motivation": "painting",
+                                "body": {"type": "TextualBody", "value": "Should be ignored"},
+                                "target": "https://example.org/canvas/c1"
+                            },
+                            {
+                                "id": "https://example.org/annotation/c1b",
+                                "type": "Annotation",
+                                "motivation": "supplementing",
+                                "body": {"type": "TextualBody", "value": "Supplementing text"},
+                                "target": "https://example.org/canvas/c1"
+                            },
+                            {
+                                "id": "https://example.org/annotation/c1c",
+                                "type": "Annotation",
+                                "motivation": "commenting",
+                                "body": {"type": "TextualBody", "value": "Commenting text"},
+                                "target": "https://example.org/canvas/c1"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+
+    client.fetch_json = lambda url: manifest_data
+
+    results = client.parse_manifest_canvases("https://example.org/manifest/3")
+
+    assert len(results) == 1
+    assert results[0]["text"] == "Supplementing text\nCommenting text"
+
+
+def test_parse_manifest_canvases_failed_external_fetch():
+    """Test that a failed external annotation page fetch is handled gracefully"""
+    client = IIIFClient(no_cache=True)
+    manifest_data = load_fixture("iiif_v3_manifest_referenced_annotations.json")
+
+    def mock_fetch_json(url):
+        if url == "https://example.org/annotation-page/r1":
+            raise requests.RequestException("Connection error")
+        return manifest_data
+
+    client.fetch_json = mock_fetch_json
+
+    # Should not raise; canvas with failed fetch is simply skipped
+    results = client.parse_manifest_canvases("https://example.org/manifest/2")
+    assert results == []
+
+
+def test_parse_manifest_canvases_no_annotations():
+    """Test parse_manifest_canvases returns empty list when no canvases have transcriptions"""
+    client = IIIFClient(no_cache=True)
+
+    manifest_data = {
+        "@context": "http://iiif.io/api/presentation/3/context.json",
+        "id": "https://example.org/manifest/4",
+        "type": "Manifest",
+        "label": {"en": ["No Transcriptions"]},
+        "items": [
+            {"id": "https://example.org/canvas/x1", "type": "Canvas", "items": []},
+            {"id": "https://example.org/canvas/x2", "type": "Canvas", "items": []}
+        ]
+    }
+
+    client.fetch_json = lambda url: manifest_data
+
+    results = client.parse_manifest_canvases("https://example.org/manifest/4")
+    assert results == []

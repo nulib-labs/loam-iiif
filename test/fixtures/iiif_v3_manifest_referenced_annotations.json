@@ -1,0 +1,26 @@
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "id": "https://example.org/manifest/2",
+  "type": "Manifest",
+  "label": {"en": ["Test Manifest with Referenced Annotations"]},
+  "homepage": [{"id": "https://example.org/item/2", "type": "Text"}],
+  "items": [
+    {
+      "id": "https://example.org/canvas/r1",
+      "type": "Canvas",
+      "label": {"en": ["Page 1"]},
+      "annotations": [
+        {
+          "id": "https://example.org/annotation-page/r1",
+          "type": "AnnotationPage"
+        }
+      ]
+    },
+    {
+      "id": "https://example.org/canvas/r2",
+      "type": "Canvas",
+      "label": {"en": ["Page 2 (no transcription)"]},
+      "annotations": []
+    }
+  ]
+}
